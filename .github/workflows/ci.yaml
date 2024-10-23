@@ -1,0 +1,82 @@
+name: ci
+
+on:
+  push:
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+jobs:
+  cabal:
+    strategy:
+      fail-fast: false
+      matrix:
+        ghc:
+          - "9.2.8"
+          - "9.4.8"
+          - "9.6.6"
+          - "9.8.2"
+          - "9.10.1"
+        os:
+          - "macos-latest"
+          - "ubuntu-latest"
+          - "windows-latest"
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: haskell-actions/setup@v2
+        with:
+          ghc-version: ${{ matrix.ghc }}
+
+      - name: Configure
+        run: cabal configure --enable-tests --ghc-options='-Wno-deprecations -Werror'
+
+      - name: Build
+        run: cabal build fs-utils
+
+      - name: Unit tests
+        run: cabal test unit --test-options '--hedgehog-tests 100000'
+
+  nix:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - "macos-latest"
+          - "ubuntu-latest"
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup nix
+        uses: cachix/install-nix-action@v25
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Build fs-utils
+        run: nix build -Lv
+  lint:
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup nix
+        uses: cachix/install-nix-action@v25
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Formatting
+        run: |
+          nix run .#format
+          git diff --exit-code --color=always
+
+      - name: HLint
+        run: nix run .#lint

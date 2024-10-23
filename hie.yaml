@@ -1,0 +1,7 @@
+cradle:
+  cabal:
+    - path: "./src"
+      component: "lib:fs-utils"
+
+    - path: "./test/unit"
+      component: "fs-utils:test:unit"

@@ -1,0 +1,32 @@
+packages: .
+
+program-options
+  ghc-options:
+    -Wall -Wcompat
+    -Widentities
+    -Wincomplete-record-updates
+    -Wincomplete-uni-patterns
+    -Wmissing-deriving-strategies
+    -Wmissing-export-lists
+    -Wmissing-exported-signatures
+    -Wmissing-home-modules
+    -Wmissing-import-lists
+    -Wpartial-fields
+    -Wprepositive-qualified-module
+    -Wredundant-constraints
+    -Wunused-binds
+    -Wunused-packages
+    -Wunused-type-patterns
+    -Wno-unticked-promoted-constructors
+
+-- We require filepath >= 1.4.100.1 i.e. new OsPath functionality.
+-- When cabal chooses filepath >= 1.5, this requires the os-string flag
+-- in the following libraries to compile.
+
+package directory
+  flags: +os-string
+
+package file-io
+  flags: +os-string
+
+test-show-details: direct
