@@ -1,5 +1,8 @@
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 
+-- | Provides common file IO actions in terms of 'OsPath'.
+--
+-- @since 0.1
 module FileSystem.IO
   ( -- * File handling
     readBinaryFileIO,

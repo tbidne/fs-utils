@@ -1,5 +1,8 @@
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 
+-- | Provides @ByteString <-> Text@ (UTF-8) conversions.
+--
+-- @since 0.1
 module FileSystem.UTF8
   ( -- * Decoding UTF-8
 

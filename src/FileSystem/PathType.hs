@@ -1,3 +1,6 @@
+-- | Provides a type for distinguishing different path types.
+--
+-- @since 0.1
 module FileSystem.PathType
   ( PathType (..),
     displayPathType,

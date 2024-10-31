@@ -1,6 +1,9 @@
 {-# LANGUAGE CPP #-}
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 
+-- | Provides utilities for working with 'OsPath'.
+--
+-- @since 0.1
 module FileSystem.OsPath
   ( -- * Types
     OsPath,
