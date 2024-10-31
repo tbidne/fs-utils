@@ -13,7 +13,7 @@ module FileSystem.IO
 
     -- * Errors
     throwPathIOError,
-    throwPathIOErrorFilePath,
+    throwFilePathIOError,
   )
 where
 
@@ -71,13 +71,13 @@ throwPathIOError ::
   -- | Description.
   String ->
   m a
-throwPathIOError = throwPathIOErrorFilePath . FS.OsPath.decodeLenient
+throwPathIOError = throwFilePathIOError . FS.OsPath.decodeLenient
 {-# INLINEABLE throwPathIOError #-}
 
 -- | Helper for throwing 'IOException' with legacy FilePath.
 --
 -- @since 0.1
-throwPathIOErrorFilePath ::
+throwFilePathIOError ::
   (HasCallStack, MonadThrow m) =>
   -- | Path upon which the IO operation failed.
   FilePath ->
@@ -88,7 +88,7 @@ throwPathIOErrorFilePath ::
   -- | Description.
   String ->
   m a
-throwPathIOErrorFilePath path loc ty desc =
+throwFilePathIOError path loc ty desc =
   throwM $
     IOError
       { ioe_handle = Nothing,
@@ -98,4 +98,4 @@ throwPathIOErrorFilePath path loc ty desc =
         ioe_errno = Nothing,
         ioe_filename = Just path
       }
-{-# INLINEABLE throwPathIOErrorFilePath #-}
+{-# INLINEABLE throwFilePathIOError #-}
