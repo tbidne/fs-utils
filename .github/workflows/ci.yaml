@@ -1,6 +1,7 @@
+---
 name: ci
 
-on:
+on: # yamllint disable-line rule:truthy rule:comments
   push:
     branches:
       - main
@@ -35,7 +36,9 @@ jobs:
           ghc-version: ${{ matrix.ghc }}
 
       - name: Configure
+        # yamllint disable rule:line-length
         run: cabal configure --enable-tests --ghc-options='-Wno-deprecations -Werror'
+        # yamlline enable
 
       - name: Build
         run: cabal build fs-utils

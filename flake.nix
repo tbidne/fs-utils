@@ -21,6 +21,11 @@
             inherit compiler pkgs;
           };
 
+          pkgsMkDrv = {
+            inherit pkgs;
+            mkDrv = false;
+          };
+
           mkPkg =
             returnShellEnv:
             nix-hs-utils.mkHaskellPkg {
@@ -34,9 +39,21 @@
           devShells.default = mkPkg true;
 
           apps = {
-            format = nix-hs-utils.format compilerPkgs;
-            lint = nix-hs-utils.lint compilerPkgs;
-            lintRefactor = nix-hs-utils.lintRefactor compilerPkgs;
+            format = nix-hs-utils.mergeApps {
+              apps = [
+                (nix-hs-utils.format (compilerPkgs // pkgsMkDrv))
+                (nix-hs-utils.format-yaml pkgsMkDrv)
+              ];
+            };
+
+            lint = nix-hs-utils.mergeApps {
+              apps = [
+                (nix-hs-utils.lint (compilerPkgs // pkgsMkDrv))
+                (nix-hs-utils.lint-yaml pkgsMkDrv)
+              ];
+            };
+
+            lint-refactor = nix-hs-utils.lint-refactor compilerPkgs;
           };
         };
       systems = [
