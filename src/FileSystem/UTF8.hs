@@ -20,6 +20,7 @@ module FileSystem.UTF8
   )
 where
 
+import Control.Category ((>>>))
 import Control.Exception (Exception (displayException))
 import Control.Exception.Safe (MonadThrow, throwM)
 import Data.ByteString (ByteString)
@@ -53,7 +54,7 @@ decodeUtf8ThrowM ::
   ByteString ->
   m Text
 decodeUtf8ThrowM =
-  decodeUtf8 >.> \case
+  decodeUtf8 >>> \case
     Right txt -> pure txt
     Left ex -> throwM ex
 {-# INLINEABLE decodeUtf8ThrowM #-}
@@ -66,7 +67,7 @@ decodeUtf8Fail ::
   ByteString ->
   m Text
 decodeUtf8Fail =
-  decodeUtf8 >.> \case
+  decodeUtf8 >>> \case
     Right txt -> pure txt
     Left ex -> fail $ displayException ex
 {-# INLINEABLE decodeUtf8Fail #-}
@@ -81,14 +82,6 @@ unsafeDecodeUtf8 ::
   ByteString ->
   Text
 unsafeDecodeUtf8 =
-  decodeUtf8 >.> \case
+  decodeUtf8 >>> \case
     Right txt -> txt
     Left ex -> error $ displayException ex
-
--- | Flipped '(.)'.
---
--- @since 0.1
-(>.>) :: (a -> b) -> (b -> c) -> a -> c
-(>.>) = flip (.)
-
-infixl 9 >.>

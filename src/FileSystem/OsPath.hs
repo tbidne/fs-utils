@@ -57,6 +57,7 @@ module FileSystem.OsPath
   )
 where
 
+import Control.Category ((>>>))
 import Control.Exception (Exception (displayException))
 import Control.Exception.Safe (MonadThrow, throwM)
 import GHC.IO.Encoding.Failure (CodingFailureMode (TransliterateCodingFailure))
@@ -176,7 +177,7 @@ encodeValidLenient = OsPath.makeValid . encodeLenient
 -- @since 0.1
 encodeThrowM :: (HasCallStack, MonadThrow m) => FilePath -> m OsPath
 encodeThrowM =
-  encode >.> \case
+  encode >>> \case
     Right txt -> pure txt
     Left ex -> throwM ex
 {-# INLINEABLE encodeThrowM #-}
@@ -253,7 +254,7 @@ decodeLenient = elimEx . OsPath.decodeWith uft8Encoding utf16Encoding
 -- @since 0.1
 decodeThrowM :: (HasCallStack, MonadThrow m) => OsPath -> m FilePath
 decodeThrowM =
-  decode >.> \case
+  decode >>> \case
     Right txt -> pure txt
     Left ex -> throwM ex
 {-# INLINEABLE decodeThrowM #-}
@@ -393,11 +394,3 @@ infixl 9 !</>
 -- @since 0.1
 combineFilePaths :: FilePath -> FilePath -> FilePath
 combineFilePaths = (FP.</>)
-
--- | Flipped '(.)'.
---
--- @since 0.1
-(>.>) :: (a -> b) -> (b -> c) -> a -> c
-(>.>) = flip (.)
-
-infixl 9 >.>
