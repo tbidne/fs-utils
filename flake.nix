@@ -15,8 +15,12 @@
         { pkgs, ... }:
         let
           hlib = pkgs.haskell.lib;
-          ghc-version = "ghc982";
-          compiler = pkgs.haskell.packages."${ghc-version}";
+          ghc-version = "ghc9101";
+          compiler = pkgs.haskell.packages."${ghc-version}".override {
+            overrides = final: prev: {
+              path = hlib.dontCheck prev.path_0_9_6;
+            };
+          };
           compilerPkgs = {
             inherit compiler pkgs;
           };
@@ -30,6 +34,13 @@
             returnShellEnv:
             nix-hs-utils.mkHaskellPkg {
               inherit compiler pkgs returnShellEnv;
+              # TODO: Once hlint is back to working with our GHC we can
+              # remove the explicit devTools.
+              devTools = [
+                (hlib.dontCheck compiler.cabal-fmt)
+                (hlib.dontCheck compiler.haskell-language-server)
+                pkgs.nixfmt-rfc-style
+              ];
               name = "fs-utils";
               root = ./.;
             };
@@ -48,12 +59,16 @@
 
             lint = nix-hs-utils.mergeApps {
               apps = [
-                (nix-hs-utils.lint (compilerPkgs // pkgsMkDrv))
+                # TODO: We require GHC 9.10+ since we need filepath >= 1.5,
+                # but hlint is sadly not compatible yet. Hence it is disabled
+                # for now.
+                #
+                #(nix-hs-utils.lint (compilerPkgs // pkgsMkDrv))
                 (nix-hs-utils.lint-yaml pkgsMkDrv)
               ];
             };
 
-            lint-refactor = nix-hs-utils.lint-refactor compilerPkgs;
+            #lint-refactor = nix-hs-utils.lint-refactor compilerPkgs;
           };
         };
       systems = [

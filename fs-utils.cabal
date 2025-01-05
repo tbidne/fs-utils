@@ -36,29 +36,12 @@ common common-lang
   if os(windows)
     cpp-options: -DWINDOWS
 
--- TODO: [FilePath vs. OsString upgrade]
---
--- It would be nice to upgrade the filepath lower bound to >= 1.5.
--- Why? Because filepath 1.5+ is where the OsString type is split out into
--- the separate package os-string. Prior to that, it lives in the filepath
--- package. This can make it awkward dealing with libs where we need to
--- use OsStrings internals.
---
--- For now we have a conditional in the cabal file that uses a flag to
--- distinguish filepath < 1.5 and filepath >= 1.5 + os-string. But it's not
--- ideal.
---
--- The real problem is that overriding boot libraries is difficult in nix,
--- so realistically we need to wait until filepath >= 1.5 is a boot lib in
--- nix. This means GHC 9.10+, so probably once 9.10 becomes the default.
---
--- Once that happens, consider upgrading the bound.
-
 library
   import:          common-lang
   exposed-modules:
     FileSystem.IO
     FileSystem.OsPath
+    FileSystem.Path
     FileSystem.PathType
     FileSystem.UTF8
 
@@ -67,7 +50,9 @@ library
     , bytestring        >=0.10.12.0 && <0.13
     , deepseq           >=1.4.4.0   && <1.6
     , file-io           ^>=0.1.0.0
-    , filepath          >=1.4.100.1 && <1.6
+    , filepath          >=1.5       && <1.6
+    , os-string         ^>=2.0.1
+    , path              ^>=0.9.6
     , safe-exceptions   ^>=0.1.7.0
     , template-haskell  >=2.18.0.0  && <2.23
     , text              >=1.2.4.0   && <2.2
