@@ -333,7 +333,7 @@ utfEncodingsLenient =
 decodeFailure :: String -> OsPath -> String -> String
 decodeFailure fnName p msg =
   mconcat
-    [ "[Effects.FileSystem.OsPath.",
+    [ "[FileSystem.OsPath.",
       fnName,
       "]: Could not decode ospath '",
       decodeShow p,
@@ -345,7 +345,7 @@ decodeFailure fnName p msg =
 encodeFailure :: String -> FilePath -> String -> String
 encodeFailure fnName fp msg =
   mconcat
-    [ "[Effects.FileSystem.OsPath.",
+    [ "[FileSystem.OsPath.",
       fnName,
       "]: Could not encode filepath '",
       fp,
@@ -357,12 +357,12 @@ encodeFailure fnName fp msg =
 validErr :: String -> String -> OsPath -> String
 validErr fnName fp x =
   mconcat
-    [ "[Effects.FileSystem.OsPath.",
+    [ "[FileSystem.OsPath.",
       fnName,
       "]: Original path '",
       fp,
       "' encoded as '",
-      decodeShow x,
+      decodeLenient x,
       "' failed isValid"
     ]
 
