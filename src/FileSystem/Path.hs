@@ -22,6 +22,13 @@ module FileSystem.Path
 
     -- * Elimination
     pathToOsPath,
+
+    -- * Re-exports
+    Path,
+    Abs,
+    Rel,
+    Dir,
+    File,
   )
 where
 
