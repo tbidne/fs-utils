@@ -22,7 +22,7 @@ where
 
 import Control.Category ((>>>))
 import Control.Exception (Exception (displayException))
-import Control.Exception.Safe (MonadThrow, throwM)
+import Control.Monad.Catch (MonadThrow, throwM)
 import Data.ByteString (ByteString)
 import Data.Text (Text)
 import Data.Text.Encoding qualified as TEnc

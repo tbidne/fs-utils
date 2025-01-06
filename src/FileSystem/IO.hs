@@ -17,7 +17,7 @@ module FileSystem.IO
   )
 where
 
-import Control.Exception.Safe (MonadThrow, throwM)
+import Control.Monad.Catch (MonadThrow, throwM)
 import Data.ByteString (ByteString)
 import FileSystem.OsPath qualified as FS.OsPath
 import GHC.IO.Exception

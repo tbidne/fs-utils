@@ -59,7 +59,7 @@ where
 
 import Control.Category ((>>>))
 import Control.Exception (Exception (displayException))
-import Control.Exception.Safe (MonadThrow, throwM)
+import Control.Monad.Catch (MonadThrow, throwM)
 import GHC.IO.Encoding.Failure (CodingFailureMode (TransliterateCodingFailure))
 import GHC.IO.Encoding.UTF16 qualified as UTF16
 import GHC.IO.Encoding.UTF8 qualified as UTF8

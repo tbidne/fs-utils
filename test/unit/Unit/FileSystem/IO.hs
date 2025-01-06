@@ -3,7 +3,12 @@
 
 module Unit.FileSystem.IO (tests) where
 
-import Control.Exception.Safe (MonadCatch, catchAny, displayException, tryAny)
+import Control.Exception
+  ( Exception (fromException, toException),
+    SomeAsyncException (SomeAsyncException),
+    SomeException,
+  )
+import Control.Monad.Catch (MonadCatch, catch, displayException, throwM, try)
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import Data.ByteString (ByteString)
 import Data.ByteString qualified as BS
@@ -219,3 +224,30 @@ badChars =
 
 charMapper = id
 #endif
+
+catchAny :: (MonadCatch m) => m a -> (SomeException -> m a) -> m a
+catchAny m h =
+  catch @_ @SomeException
+    m
+    ( \e ->
+        if isAsyncException e
+          then throwM e
+          else h e
+    )
+
+tryAny :: (MonadCatch m) => m a -> m (Either SomeException a)
+tryAny m = do
+  try @_ @SomeException m >>= \case
+    Left e ->
+      if isAsyncException e
+        then throwM e
+        else pure $ Left e
+    Right x -> pure $ Right x
+
+isAsyncException :: forall e. (Exception e) => e -> Bool
+isAsyncException = not . isSyncException
+
+isSyncException :: forall e. (Exception e) => e -> Bool
+isSyncException e = case fromException (toException e) of
+  Just SomeAsyncException {} -> False
+  Nothing -> True

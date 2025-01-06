@@ -25,7 +25,7 @@ module FileSystem.Path
   )
 where
 
-import Control.Exception.Safe (MonadThrow)
+import Control.Monad.Catch (MonadThrow)
 import GHC.Stack (HasCallStack)
 import Language.Haskell.TH.Quote
   ( QuasiQuoter
