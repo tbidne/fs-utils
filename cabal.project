@@ -19,14 +19,8 @@ program-options
     -Wunused-type-patterns
     -Wno-unticked-promoted-constructors
 
--- We require filepath >= 1.4.100.1 i.e. new OsPath functionality.
--- When cabal chooses filepath >= 1.5, this requires the os-string flag
--- in the following libraries to compile.
-
-package directory
-  flags: +os-string
-
-package file-io
-  flags: +os-string
+allow-newer: aeson:ghc-prim
+allow-newer: aeson:template-haskell
+allow-newer: path:hashable
 
 test-show-details: direct
