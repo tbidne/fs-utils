@@ -13,6 +13,10 @@ module FileSystem.Path
 
     -- * Operations
     (<</>>),
+    addExtension,
+    splitExtension,
+    fileExtension,
+    replaceExtension,
 
     -- * Parsing
     parseAbsDir,
@@ -33,6 +37,7 @@ module FileSystem.Path
 where
 
 import Control.Monad.Catch (MonadThrow)
+import Data.Bifunctor (Bifunctor (second))
 import GHC.Stack (HasCallStack)
 import Language.Haskell.TH.Quote
   ( QuasiQuoter
@@ -156,3 +161,42 @@ parseRelFile = Path.parseRelFile . (.getOsString)
 (<</>>) = (Path.</>)
 
 infixr 5 <</>>
+
+-- | Like 'Path.addExtension', but in terms of 'OsPath' rather than system
+-- specific type.
+--
+-- @since 0.1
+addExtension ::
+  (HasCallStack, MonadThrow m) =>
+  OsPath ->
+  Path b File ->
+  m (Path b File)
+addExtension p = Path.addExtension p.getOsString
+
+-- | Like 'Path.splitExtension', but in terms of 'OsPath' rather than system
+-- specific type.
+--
+-- @since 0.1
+splitExtension ::
+  (HasCallStack, MonadThrow m) =>
+  Path b File ->
+  m (Path b File, OsPath)
+splitExtension = fmap (second OsString) . Path.splitExtension
+
+-- | Like 'Path.fileExtension', but in terms of 'OsPath' rather than system
+-- specific type.
+--
+-- @since 0.1
+fileExtension :: (HasCallStack, MonadThrow m) => Path b File -> m OsPath
+fileExtension = fmap OsString . Path.fileExtension
+
+-- | Like 'Path.replaceExtension', but in terms of 'OsPath' rather than system
+-- specific type.
+--
+-- @since 0.1
+replaceExtension ::
+  (HasCallStack, MonadThrow m) =>
+  OsPath ->
+  Path b File ->
+  m (Path b File)
+replaceExtension p = Path.replaceExtension p.getOsString
