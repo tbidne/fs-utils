@@ -1,11 +1,15 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE ViewPatterns #-}
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 
 -- | Provides utilities for working with 'Path'.
 --
 -- @since 0.1
 module FileSystem.Path
-  ( -- * QuasiQuoters
+  ( -- * Pattern Synonym
+    pattern MkPath,
+
+    -- * QuasiQuoters
     absdirPathSep,
     absfilePathSep,
     reldirPathSep,
@@ -25,7 +29,7 @@ module FileSystem.Path
     parseRelFile,
 
     -- * Elimination
-    pathToOsPath,
+    toOsPath,
 
     -- * Re-exports
     Path,
@@ -52,6 +56,14 @@ import OsPath (Abs, Dir, File, Path, Rel)
 import OsPath qualified as Path
 import System.OsPath (OsPath)
 import System.OsString.Internal.Types (OsString (OsString, getOsString))
+
+-- | Pattern synonym for eliminating 'Path' to 'OsPath'.
+--
+-- @since 0.1
+pattern MkPath :: OsPath -> Path b t
+pattern MkPath p <- (toOsPath -> p)
+
+{-# COMPLETE MkPath #-}
 
 -- | Like 'Path.absdir', except it runs paths through a "replace function"
 -- first. On unix, replaces @\\@ with @/@. On windows, does the opposite.
@@ -122,8 +134,8 @@ replaceSlashes = foldr go ""
 -- | 'Path' to 'OsPath'.
 --
 -- @since 0.1
-pathToOsPath :: Path b t -> OsPath
-pathToOsPath = OsString . Path.toOsPath
+toOsPath :: Path b t -> OsPath
+toOsPath = OsString . Path.toOsPath
 
 -- | Like 'Path.parseAbsDir', but in terms of 'OsPath' rather than system
 -- specific type.
@@ -153,8 +165,8 @@ parseRelDir = Path.parseRelDir . (.getOsString)
 parseRelFile :: (HasCallStack, MonadThrow m) => OsPath -> m (Path Rel File)
 parseRelFile = Path.parseRelFile . (.getOsString)
 
--- | Alias for 'Path.</>', intended to allow unqualified usage with 'OsPath's
--- @(</>)@.
+-- | Alias for 'Path.</>', intended to allow unqualified usage alongside
+-- 'OsPath''s @\</\>@.
 --
 -- @since 0.1
 (<</>>) :: Path b Dir -> Path Rel t -> Path b t
