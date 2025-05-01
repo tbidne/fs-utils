@@ -10,6 +10,7 @@ import System.Environment.Guard (ExpectEnv (ExpectEnvSet), guardOrElse')
 import Test.Tasty (defaultMain, testGroup, withResource)
 import Unit.FileSystem.IO qualified
 import Unit.FileSystem.OsPath qualified
+import Unit.FileSystem.OsString qualified
 
 main :: IO ()
 main =
@@ -18,7 +19,8 @@ main =
       testGroup
         "Unit Tests"
         [ Unit.FileSystem.IO.tests args,
-          Unit.FileSystem.OsPath.tests
+          Unit.FileSystem.OsPath.tests,
+          Unit.FileSystem.OsString.tests
         ]
 
 setup :: IO OsPath

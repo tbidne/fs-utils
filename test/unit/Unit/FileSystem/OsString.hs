@@ -1,12 +1,11 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE QuasiQuotes #-}
 
-module Unit.FileSystem.OsPath (tests) where
+module Unit.FileSystem.OsString (tests) where
 
 import Control.Monad (void)
 import Data.Either (isRight)
-import FileSystem.OsPath (OsPath, osp, ospPathSep)
-import FileSystem.OsPath qualified as FS.OsPath
+import FileSystem.OsString (OsString)
+import FileSystem.OsString qualified as FS.OsString
 import Hedgehog
   ( Gen,
     PropertyT,
@@ -19,17 +18,15 @@ import Hedgehog
 import Hedgehog qualified as H
 import Hedgehog.Gen qualified as Gen
 import Hedgehog.Range qualified as Range
-import System.OsPath qualified as OsPath
+import System.OsString qualified as OsString
 import Test.Tasty (TestTree, testGroup)
-import Test.Tasty.HUnit (testCase, (@=?))
 import Test.Tasty.Hedgehog (testPropertyNamed)
 
 tests :: TestTree
 tests =
   testGroup
-    "OsPath"
-    [ encodingTests,
-      ospPathSepTests
+    "OsString"
+    [ encodingTests
     ]
 
 encodingTests :: TestTree
@@ -38,8 +35,6 @@ encodingTests =
     "Encoding"
     [ testEncodeLenientTotal,
       testEncodeLenientEqualsEncode,
-      testEncodeValidLenientTotal,
-      testEncodeValidLenientEqualsEncode,
       testDecodeLenientTotal,
       testDecodeLenientEqualsDecode
     ]
@@ -47,9 +42,9 @@ encodingTests =
 testEncodeLenientTotal :: TestTree
 testEncodeLenientTotal = testPropertyNamed desc "testEncodeLenientTotal" $ do
   H.property $ do
-    fp <- forAll genSketchyFilePath
+    fp <- forAll genSketchyString
 
-    let encoded = FS.OsPath.encodeLenient fp
+    let encoded = FS.OsString.encodeLenient fp
 
     void $ evalNF encoded
   where
@@ -58,10 +53,10 @@ testEncodeLenientTotal = testPropertyNamed desc "testEncodeLenientTotal" $ do
 testEncodeLenientEqualsEncode :: TestTree
 testEncodeLenientEqualsEncode = testPropertyNamed desc "testEncodeLenientEqualsEncode" $ do
   H.property $ do
-    filePath <- forAll genFilePath
+    string <- forAll genString
 
-    let eEncoded = FS.OsPath.encode filePath
-        encodedLenient = FS.OsPath.encodeLenient filePath
+    let eEncoded = FS.OsString.encode string
+        encodedLenient = FS.OsString.encodeLenient string
         encodeSuccess = isRight eEncoded
 
     annotateShow encodedLenient
@@ -70,38 +65,12 @@ testEncodeLenientEqualsEncode = testPropertyNamed desc "testEncodeLenientEqualsE
   where
     desc = "encode == encodeLenient for good paths"
 
-testEncodeValidLenientTotal :: TestTree
-testEncodeValidLenientTotal = testPropertyNamed desc "testEncodeValidLenientTotal" $ do
-  H.property $ do
-    fp <- forAll genSketchyFilePath
-
-    let encoded = FS.OsPath.encodeValidLenient fp
-
-    void $ evalNF encoded
-  where
-    desc = "encodeValidLenient is total"
-
-testEncodeValidLenientEqualsEncode :: TestTree
-testEncodeValidLenientEqualsEncode = testPropertyNamed desc "testEncodeValidLenientEqualsEncode" $ do
-  H.property $ do
-    filePath <- forAll genFilePath
-
-    let eEncoded = FS.OsPath.encodeValid filePath
-        encodedLenient = FS.OsPath.encodeValidLenient filePath
-        encodeSuccess = isRight eEncoded
-
-    annotateShow encodedLenient
-
-    compareWithCoverage encodeSuccess eEncoded encodedLenient
-  where
-    desc = "encodeValid == encodeValidLenient for good paths"
-
 testDecodeLenientTotal :: TestTree
 testDecodeLenientTotal = testPropertyNamed desc "testDecodeLenientTotal" $ do
   H.property $ do
-    osPath <- forAll genSketchyOsPath
+    osString <- forAll genSketchyOsString
 
-    let decoded = FS.OsPath.decodeLenient osPath
+    let decoded = FS.OsString.decodeLenient osString
 
     void $ evalNF decoded
   where
@@ -110,10 +79,10 @@ testDecodeLenientTotal = testPropertyNamed desc "testDecodeLenientTotal" $ do
 testDecodeLenientEqualsDecode :: TestTree
 testDecodeLenientEqualsDecode = testPropertyNamed desc "testDecodeLenientEqualsDecode" $ do
   H.property $ do
-    osPath <- forAll genValidOsPath
+    osString <- forAll genValidOsString
 
-    let eDecoded = FS.OsPath.decode osPath
-        decodedLenient = FS.OsPath.decodeLenient osPath
+    let eDecoded = FS.OsString.decode osString
+        decodedLenient = FS.OsString.decodeLenient osString
         decodeSuccess = isRight eDecoded
 
     annotate decodedLenient
@@ -157,58 +126,27 @@ compareWithCoverage isSuccess eResult resultLenient = do
       H.label "Generated good path"
       result === resultLenient
 
--- | The idea is, generate a possibly invalid OsPath s.t. generation is total
+-- | The idea is, generate a possibly invalid OsString s.t. generation is total
 -- but decoding might fail. Turns out this works i.e. if we replace
 -- decodeLenient with unsafeDecode, then the test fails
 -- (which is what we want, since we want to test that lenient is actually
 -- doing something).
-genSketchyOsPath :: Gen OsPath
-genSketchyOsPath = do
-  str <- genSketchyFilePath
-  let osCharList = OsPath.unsafeFromChar <$> str
-  pure $ OsPath.pack osCharList
+genSketchyOsString :: Gen OsString
+genSketchyOsString = do
+  str <- genSketchyString
+  let osCharList = OsString.unsafeFromChar <$> str
+  pure $ OsString.pack osCharList
 
-genSketchyFilePath :: Gen FilePath
-genSketchyFilePath = genSomeFilePath 0 Gen.unicodeAll
+genSketchyString :: Gen String
+genSketchyString = genSomeString 0 Gen.unicodeAll
 
-genValidOsPath :: Gen OsPath
-genValidOsPath = FS.OsPath.unsafeEncodeValid <$> genFilePath
+genValidOsString :: Gen OsString
+genValidOsString = FS.OsString.unsafeEncode <$> genString
 
-genFilePath :: Gen FilePath
-genFilePath = genSomeFilePath 1 g
+genString :: Gen String
+genString = genSomeString 1 g
   where
     g = Gen.filter (/= '\NUL') Gen.unicode
 
-genSomeFilePath :: Int -> Gen Char -> Gen FilePath
-genSomeFilePath start = Gen.string (Range.linearFrom start start 50)
-
-ospPathSepTests :: TestTree
-ospPathSepTests =
-  testGroup
-    "ospPathSep"
-    [ testReplacesSlashes
-    ]
-
-testReplacesSlashes :: TestTree
-testReplacesSlashes = testCase "Slashes are replaced" $ do
-
-#if WINDOWS
-
-  [osp|\path\to\foo|] @=? [ospPathSep|/path/to/foo|]
-  [osp|\path\to\foo\|] @=? [ospPathSep|/path/to/foo/|]
-  [osp|.\path\to\foo\|] @=? [ospPathSep|./path/to/foo/|]
-  [osp|.\|] @=? [ospPathSep|./|]
-  [osp|.|] @=? [ospPathSep|.|]
-
-#else
-
-  [osp|/path/to/foo|] @=? [ospPathSep|\path\to\foo|]
-  [osp|/path/to/foo/|] @=? [ospPathSep|\path\to\foo\|]
-  [osp|./path/to/foo|] @=? [ospPathSep|.\path\to\foo|]
-  [osp|./|] @=? [ospPathSep|.\|]
-  [osp|.|] @=? [ospPathSep|.|]
-
-  -- no escaping in quasiquote
-  [osp|//path//to//foo|] @=? [ospPathSep|\\path\\to\\foo|]
-
-#endif
+genSomeString :: Int -> Gen Char -> Gen String
+genSomeString start = Gen.string (Range.linearFrom start start 50)

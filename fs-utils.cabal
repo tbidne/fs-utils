@@ -49,10 +49,12 @@ library
   exposed-modules:
     FileSystem.IO
     FileSystem.OsPath
+    FileSystem.OsString
     FileSystem.Path
     FileSystem.PathType
     FileSystem.UTF8
 
+  other-modules:   FileSystem.Internal
   build-depends:
     , base              >=4.16.0.0  && <4.22
     , bytestring        >=0.10.12.0 && <0.13
@@ -74,6 +76,7 @@ test-suite unit
   other-modules:
     Unit.FileSystem.IO
     Unit.FileSystem.OsPath
+    Unit.FileSystem.OsString
 
   build-depends:
     , base
@@ -84,6 +87,7 @@ test-suite unit
     , filepath
     , fs-utils
     , hedgehog              >=1.0.2     && <1.6
+    , os-string
     , tasty                 >=1.1.0.3   && <1.6
     , tasty-hedgehog        >=1.2.0.0   && <1.5
     , tasty-hunit           >=0.9       && <0.11
