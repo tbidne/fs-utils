@@ -54,6 +54,9 @@ module FileSystem.OsPath
     (</>!),
     (!</>),
     combineFilePaths,
+
+    -- * Errors
+    EncodingException (..),
   )
 where
 

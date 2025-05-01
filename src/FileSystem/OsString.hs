@@ -31,6 +31,9 @@ module FileSystem.OsString
     decodeThrowM,
     decodeFail,
     unsafeDecode,
+
+    -- * Errors
+    EncodingException (..),
   )
 where
 
@@ -41,7 +44,7 @@ import FileSystem.Internal qualified as Internal
 import GHC.Stack (HasCallStack)
 import System.OsString (OsString, osstr)
 import System.OsString qualified as OsString
-import System.OsString.Encoding (EncodingException)
+import System.OsString.Encoding (EncodingException (EncodingError))
 
 -- NOTE: -Wno-redundant-constraints is because the HasCallStack is redundant
 -- on some of these functions when the exceptions library is too old.
