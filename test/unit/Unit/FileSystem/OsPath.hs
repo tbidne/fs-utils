@@ -5,13 +5,24 @@ module Unit.FileSystem.OsPath (tests) where
 
 import Control.Monad (void)
 import Data.Either (isRight)
-import FileSystem.OsPath (OsPath, osp, ospPathSep)
+import FileSystem.OsPath
+  ( OsPath,
+    OsPathNE (OsPathEmpty, OsPathNonEmpty),
+    TildeState
+      ( TildeStateNonPrefix,
+        TildeStateNone,
+        TildeStatePrefix
+      ),
+    osp,
+    ospPathSep,
+  )
 import FileSystem.OsPath qualified as FS.OsP
 import Hedgehog
   ( Gen,
     PropertyT,
     annotate,
     annotateShow,
+    assert,
     evalNF,
     forAll,
     (===),
@@ -29,7 +40,8 @@ tests =
   testGroup
     "OsPath"
     [ encodingTests,
-      ospPathSepTests
+      ospPathSepTests,
+      tildeTests
     ]
 
 encodingTests :: TestTree
@@ -172,7 +184,12 @@ genSketchyFilePath :: Gen FilePath
 genSketchyFilePath = genSomeFilePath 0 Gen.unicodeAll
 
 genValidOsPath :: Gen OsPath
-genValidOsPath = FS.OsP.unsafeEncodeValid <$> genFilePath
+-- Kind of curious how this is valid...surely arbitrary unicode (removing only
+-- null bytes) can produce invalid paths and cause unsafeEncodeValid to throw.
+--
+-- Update: Yeah, this fails on windows (strangely, only for tilde tests,
+-- apparently). Let's use encodeValidLenient which should be total.
+genValidOsPath = FS.OsP.encodeValidLenient <$> genFilePath
 
 genFilePath :: Gen FilePath
 genFilePath = genSomeFilePath 1 g
@@ -212,3 +229,58 @@ testReplacesSlashes = testCase "Slashes are replaced" $ do
   [osp|//path//to//foo|] @=? [ospPathSep|\\path\\to\\foo|]
 
 #endif
+
+tildeTests :: TestTree
+tildeTests =
+  testGroup
+    "toTildeState"
+    [ testTildeCases,
+      testTildePreservesValid
+    ]
+
+testTildeCases :: TestTree
+testTildeCases = testCase "Cases" $ do
+  -- Both unix and windows consider '~/' a tilde prefix.
+  TildeStateNone [osp|foo/bar|] @=? FS.OsP.toTildeState [osp|foo/bar|]
+  TildeStatePrefix OsPathEmpty @=? FS.OsP.toTildeState [osp|~/|]
+  TildeStatePrefix OsPathEmpty @=? FS.OsP.toTildeState [osp|~|]
+  TildeStatePrefix (OsPathNonEmpty [osp|foo/bar|]) @=? FS.OsP.toTildeState [osp|~/foo/bar|]
+  TildeStateNonPrefix [osp|foo/b~ar|] @=? FS.OsP.toTildeState [osp|foo/b~ar|]
+  TildeStateNonPrefix [osp|foo/b~ar|] @=? FS.OsP.toTildeState [osp|~/foo/b~ar|]
+  -- Use ospPathSep so that we test the "canonical" path separator i.e.
+  -- '~\' on unix (redundant for unix, since should be same as above).
+  TildeStateNone [ospPathSep|foo/bar|] @=? FS.OsP.toTildeState [ospPathSep|foo/bar|]
+  TildeStatePrefix (OsPathNonEmpty [ospPathSep|foo/bar|]) @=? FS.OsP.toTildeState [ospPathSep|~/foo/bar|]
+  TildeStateNonPrefix [ospPathSep|foo/b~ar|] @=? FS.OsP.toTildeState [ospPathSep|foo/b~ar|]
+  TildeStateNonPrefix [ospPathSep|foo/b~ar|] @=? FS.OsP.toTildeState [ospPathSep|~/foo/b~ar|]
+  -- Both unix and windows should reject the internal '~\'.
+  TildeStateNonPrefix [osp|foo/~\bar|] @=? FS.OsP.toTildeState [osp|~/foo/~\bar|]
+#if WINDOWS
+  -- Windows should recognize the tilde prefix '~\'.
+  TildeStatePrefix OsPathEmpty @=? FS.OsP.toTildeState [osp|~\|]
+  TildeStatePrefix (OsPathNonEmpty [osp|foo\bar|]) @=? FS.OsP.toTildeState [osp|~\foo\bar|]
+  -- Windows should strip the first prefix then die on the second, since we
+  -- only allow one prefix.
+  TildeStateNonPrefix [osp|foo~/bar|] @=? FS.OsP.toTildeState [osp|~\foo~/bar|]
+#else
+  -- Unix does not recognize '~\' as a tilde prefix.
+  TildeStateNonPrefix [osp|~\foo\bar|] @=? FS.OsP.toTildeState [osp|~\foo\bar|]
+  -- Unix should die on the first prefix, since it's windows only.
+  TildeStateNonPrefix [osp|~\foo~/bar|] @=? FS.OsP.toTildeState [osp|~\foo~/bar|]
+#endif
+
+testTildePreservesValid :: TestTree
+testTildePreservesValid = testPropertyNamed desc name $ do
+  H.property $ do
+    osPath <- forAll genValidOsPath
+
+    let ts = FS.OsP.toTildeState osPath
+
+    H.annotateShow ts
+    case ts of
+      TildeStatePrefix (OsPathNonEmpty p) ->
+        assert $ OsP.isValid p
+      _ -> pure ()
+  where
+    desc = "Preserves validity"
+    name = "testTildePreservesValid"

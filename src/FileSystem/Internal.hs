@@ -1,10 +1,16 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE QuasiQuotes #-}
 
 -- | @since 0.1
 module FileSystem.Internal
   ( -- * Encodings
     utfEncodings,
     utfEncodingsLenient,
+
+    -- * Tildes
+    TildePrefixes,
+    stripTildePrefix,
+    containsTilde,
 
     -- * Misc
     replaceSlashes,
@@ -16,6 +22,8 @@ import GHC.IO.Encoding.UTF16 qualified as UTF16
 import GHC.IO.Encoding.UTF8 qualified as UTF8
 import System.IO (TextEncoding)
 import System.IO qualified as IO
+import System.OsString (OsString, osstr)
+import System.OsString qualified as OsStr
 import System.OsString.Encoding (EncodingException)
 
 -- | (UTF8, UTF16LE) encoders.
@@ -51,7 +59,32 @@ utfEncodingsLenient =
   where
     elimEx = either (error . show) id
 
+type TildePrefixes = (OsString, OsString)
+
 {- ORMOLU_DISABLE -}
+
+-- | Strip tilde prefix of path @p@, returning @Just p'@ if @p@ was stripped.
+-- On posix, strips @~/@. On windows, attempts to strip the same @~/@.
+-- If that was unsuccessful, then attempts @~\\@.
+--
+-- @since 0.1
+stripTildePrefix :: TildePrefixes -> OsString -> Maybe OsString
+stripTildePrefix (posixPrefix, _windowsPrefix) p =
+  if p == [osstr|~|]
+    then Just [osstr||]
+    else case OsStr.stripPrefix posixPrefix p of
+      Just p' -> Just p'
+#if WINDOWS
+      Nothing -> OsStr.stripPrefix _windowsPrefix p
+#else
+      Nothing -> Nothing
+#endif
+
+-- | Determines if the path contains a tilde character.
+--
+-- @since 0.1
+containsTilde :: OsString -> Bool
+containsTilde = OsStr.elem (OsStr.unsafeFromChar '~')
 
 replaceSlashes :: FilePath -> FilePath
 replaceSlashes = foldr go ""
