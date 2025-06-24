@@ -5,7 +5,16 @@ module Unit.FileSystem.OsString (tests) where
 
 import Control.Monad (void)
 import Data.Either (isRight)
-import FileSystem.OsString (OsString, osstrPathSep)
+import FileSystem.OsString
+  ( OsString,
+    TildeState
+      ( TildeStateNonPrefix,
+        TildeStateNone,
+        TildeStatePrefix
+      ),
+    osstr,
+    osstrPathSep,
+  )
 import FileSystem.OsString qualified as FS.OsStr
 import Hedgehog
   ( Gen,
@@ -19,7 +28,6 @@ import Hedgehog
 import Hedgehog qualified as H
 import Hedgehog.Gen qualified as Gen
 import Hedgehog.Range qualified as Range
-import System.OsString (osstr)
 import System.OsString qualified as OsStr
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (testCase, (@=?))
@@ -30,7 +38,8 @@ tests =
   testGroup
     "OsString"
     [ encodingTests,
-      osstrPathSepTests
+      osstrPathSepTests,
+      tildeTests
     ]
 
 encodingTests :: TestTree
@@ -184,4 +193,42 @@ testReplacesSlashes = testCase "Slashes are replaced" $ do
   -- no escaping in quasiquote
   [osstr|//path//to//foo|] @=? [osstrPathSep|\\path\\to\\foo|]
 
+#endif
+
+tildeTests :: TestTree
+tildeTests =
+  testGroup
+    "toTildeState"
+    [ testTildeCases
+    ]
+
+testTildeCases :: TestTree
+testTildeCases = testCase "Cases" $ do
+  -- Both unix and windows consider '~/' a tilde prefix.
+  TildeStateNone [osstr|foo/bar|] @=? FS.OsStr.toTildeState [osstr|foo/bar|]
+  TildeStatePrefix [osstr||] @=? FS.OsStr.toTildeState [osstr|~/|]
+  TildeStatePrefix [osstr||] @=? FS.OsStr.toTildeState [osstr|~|]
+  TildeStatePrefix [osstr|foo/bar|] @=? FS.OsStr.toTildeState [osstr|~/foo/bar|]
+  TildeStateNonPrefix [osstr|foo/b~ar|] @=? FS.OsStr.toTildeState [osstr|foo/b~ar|]
+  TildeStateNonPrefix [osstr|foo/b~ar|] @=? FS.OsStr.toTildeState [osstr|~/foo/b~ar|]
+  -- Use osstrPathSep so that we test the "canonical" path separator i.e.
+  -- '~\' on unix (redundant for unix, since should be same as above).
+  TildeStateNone [osstrPathSep|foo/bar|] @=? FS.OsStr.toTildeState [osstrPathSep|foo/bar|]
+  TildeStatePrefix [osstrPathSep|foo/bar|] @=? FS.OsStr.toTildeState [osstrPathSep|~/foo/bar|]
+  TildeStateNonPrefix [osstrPathSep|foo/b~ar|] @=? FS.OsStr.toTildeState [osstrPathSep|foo/b~ar|]
+  TildeStateNonPrefix [osstrPathSep|foo/b~ar|] @=? FS.OsStr.toTildeState [osstrPathSep|~/foo/b~ar|]
+  -- Both unix and windows should reject the internal '~\'.
+  TildeStateNonPrefix [osstr|foo/~\bar|] @=? FS.OsStr.toTildeState [osstr|~/foo/~\bar|]
+#if WINDOWS
+  -- Windows should recognize the tilde prefix '~\'.
+  TildeStatePrefix [osstr||] @=? FS.OsStr.toTildeState [osstr|~\|]
+  TildeStatePrefix [osstr|foo\bar|] @=? FS.OsStr.toTildeState [osstr|~\foo\bar|]
+  -- Windows should strip the first prefix then die on the second, since we
+  -- only allow one prefix.
+  TildeStateNonPrefix [osstr|foo~/bar|] @=? FS.OsStr.toTildeState [osstr|~\foo~/bar|]
+#else
+  -- Unix does not recognize '~\' as a tilde prefix.
+  TildeStateNonPrefix [osstr|~\foo\bar|] @=? FS.OsStr.toTildeState [osstr|~\foo\bar|]
+  -- Unix should die on the first prefix, since it's windows only.
+  TildeStateNonPrefix [osstr|~\foo~/bar|] @=? FS.OsStr.toTildeState [osstr|~\foo~/bar|]
 #endif

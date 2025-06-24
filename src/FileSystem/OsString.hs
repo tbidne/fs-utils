@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 
 -- | Provides utilities for working with 'OsString'.
@@ -35,13 +37,21 @@ module FileSystem.OsString
 
     -- * Errors
     EncodingException (..),
+
+    -- * Tildes
+    toTildeState,
+    TildeState (..),
+    TildeException (..),
   )
 where
 
 import Control.Category ((>>>))
+import Control.DeepSeq (NFData)
 import Control.Exception (Exception (displayException))
 import Control.Monad.Catch (MonadThrow, throwM)
+import FileSystem.Internal (TildePrefixes)
 import FileSystem.Internal qualified as Internal
+import GHC.Generics (Generic)
 import GHC.Stack (HasCallStack)
 import Language.Haskell.TH.Quote
   ( QuasiQuoter
@@ -207,3 +217,77 @@ unsafeDecode :: (HasCallStack) => OsString -> String
 unsafeDecode p = case decode p of
   Left ex -> error (displayException ex)
   Right fp -> fp
+
+-- | Exception for a path containing a tilde.
+newtype TildeException = MkTildeException OsString
+  deriving stock
+    ( -- | @since 0.1
+      Eq,
+      -- | @since 0.1
+      Generic,
+      -- | @since 0.1
+      Show
+    )
+  deriving anyclass
+    ( -- | @since 0.1
+      NFData
+    )
+
+-- | @since 0.1
+instance Exception TildeException where
+  displayException (MkTildeException p) =
+    "Unexpected tilde in OsString: " <> decodeLenient p
+
+-- | Represents the "tilde state" for a given path.
+data TildeState
+  = -- | The path contains no tildes.
+    TildeStateNone OsString
+  | -- | The path contained a "tilde prefix" e.g. @~/@ or @~\\ (windows only)@,
+    -- which has been stripped. It contains no other tildes. Note that the
+    -- returned 'OsString' can be empty.
+    TildeStatePrefix OsString
+  | -- | The path contained a non-prefix tilde.
+    TildeStateNonPrefix OsString
+  deriving stock
+    ( -- | @since 0.1
+      Eq,
+      -- | @since 0.1
+      Generic,
+      -- | @since 0.1
+      Show
+    )
+  deriving anyclass
+    ( -- | @since 0.1
+      NFData
+    )
+
+-- | Retrieves the path's "tilde state".
+--
+-- @since 0.1
+toTildeState :: OsString -> TildeState
+toTildeState p =
+  case stripTildePrefix p of
+    -- No leading tilde; check original string.
+    Nothing -> f TildeStateNone p
+    -- Leading tilde; check stripped.
+    Just p' -> f TildeStatePrefix p'
+  where
+    f :: (OsString -> TildeState) -> OsString -> TildeState
+    f toState q =
+      if Internal.containsTilde q
+        then TildeStateNonPrefix q
+        else toState q
+
+-- | Strip tilde prefix of path @p@, returning @Just p'@ if @p@ was stripped.
+-- On unix, strips @~/@. On windows, attempts to strip the same @~/@.
+-- If that was unsuccessful, then attempts @~\\@.
+--
+-- The singular character @~@ is returned as the empty string, on both
+-- platforms.
+--
+-- @since 0.1
+stripTildePrefix :: OsString -> Maybe OsString
+stripTildePrefix = Internal.stripTildePrefix tildePrefixes
+
+tildePrefixes :: TildePrefixes
+tildePrefixes = ([osstr|~/|], [osstr|~\|])
