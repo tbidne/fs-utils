@@ -6,7 +6,7 @@ module Unit.FileSystem.OsString (tests) where
 import Control.Monad (void)
 import Data.Either (isRight)
 import FileSystem.OsString (OsString, osstrPathSep)
-import FileSystem.OsString qualified as FS.OsString
+import FileSystem.OsString qualified as FS.OsStr
 import Hedgehog
   ( Gen,
     PropertyT,
@@ -20,7 +20,7 @@ import Hedgehog qualified as H
 import Hedgehog.Gen qualified as Gen
 import Hedgehog.Range qualified as Range
 import System.OsString (osstr)
-import System.OsString qualified as OsString
+import System.OsString qualified as OsStr
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (testCase, (@=?))
 import Test.Tasty.Hedgehog (testPropertyNamed)
@@ -48,7 +48,7 @@ testEncodeLenientTotal = testPropertyNamed desc "testEncodeLenientTotal" $ do
   H.property $ do
     fp <- forAll genSketchyString
 
-    let encoded = FS.OsString.encodeLenient fp
+    let encoded = FS.OsStr.encodeLenient fp
 
     void $ evalNF encoded
   where
@@ -59,8 +59,8 @@ testEncodeLenientEqualsEncode = testPropertyNamed desc "testEncodeLenientEqualsE
   H.property $ do
     string <- forAll genString
 
-    let eEncoded = FS.OsString.encode string
-        encodedLenient = FS.OsString.encodeLenient string
+    let eEncoded = FS.OsStr.encode string
+        encodedLenient = FS.OsStr.encodeLenient string
         encodeSuccess = isRight eEncoded
 
     annotateShow encodedLenient
@@ -74,7 +74,7 @@ testDecodeLenientTotal = testPropertyNamed desc "testDecodeLenientTotal" $ do
   H.property $ do
     osString <- forAll genSketchyOsString
 
-    let decoded = FS.OsString.decodeLenient osString
+    let decoded = FS.OsStr.decodeLenient osString
 
     void $ evalNF decoded
   where
@@ -85,8 +85,8 @@ testDecodeLenientEqualsDecode = testPropertyNamed desc "testDecodeLenientEqualsD
   H.property $ do
     osString <- forAll genValidOsString
 
-    let eDecoded = FS.OsString.decode osString
-        decodedLenient = FS.OsString.decodeLenient osString
+    let eDecoded = FS.OsStr.decode osString
+        decodedLenient = FS.OsStr.decodeLenient osString
         decodeSuccess = isRight eDecoded
 
     annotate decodedLenient
@@ -138,14 +138,14 @@ compareWithCoverage isSuccess eResult resultLenient = do
 genSketchyOsString :: Gen OsString
 genSketchyOsString = do
   str <- genSketchyString
-  let osCharList = OsString.unsafeFromChar <$> str
-  pure $ OsString.pack osCharList
+  let osCharList = OsStr.unsafeFromChar <$> str
+  pure $ OsStr.pack osCharList
 
 genSketchyString :: Gen String
 genSketchyString = genSomeString 0 Gen.unicodeAll
 
 genValidOsString :: Gen OsString
-genValidOsString = FS.OsString.unsafeEncode <$> genString
+genValidOsString = FS.OsStr.unsafeEncode <$> genString
 
 genString :: Gen String
 genString = genSomeString 1 g

@@ -53,7 +53,7 @@ import Language.Haskell.TH.Quote
       ),
   )
 import System.OsString (OsString, osstr)
-import System.OsString qualified as OsString
+import System.OsString qualified as OsStr
 import System.OsString.Encoding (EncodingException (EncodingError))
 
 -- NOTE: -Wno-redundant-constraints is because the HasCallStack is redundant
@@ -96,12 +96,12 @@ osstrPathSep =
     }
 
 -- | Encodes a 'String' to an 'OsString'. This is a pure version of String's
--- 'OsString.encodeUtf' that returns the 'EncodingException' in the event of an
+-- 'OsStr.encodeUtf' that returns the 'EncodingException' in the event of an
 -- error.
 --
 -- @since 0.1
 encode :: String -> Either EncodingException OsString
-encode = OsString.encodeWith utf8Encoder utf16Encoder
+encode = OsStr.encodeWith utf8Encoder utf16Encoder
   where
     (utf8Encoder, utf16Encoder) = Internal.utfEncodings
 
@@ -110,7 +110,7 @@ encode = OsString.encodeWith utf8Encoder utf16Encoder
 --
 -- @since 0.1
 encodeLenient :: String -> OsString
-encodeLenient = elimEx . OsString.encodeWith uft8Encoding utf16Encoding
+encodeLenient = elimEx . OsStr.encodeWith uft8Encoding utf16Encoding
   where
     (uft8Encoding, utf16Encoding, elimEx) = Internal.utfEncodingsLenient
 
@@ -144,11 +144,11 @@ unsafeEncode fp = case encode fp of
   Right p -> p
 
 -- | Decodes an 'OsString' to a 'String'. This is a pure version of String's
--- 'OsString.decodeUtf'.
+-- 'OsStr.decodeUtf'.
 --
 -- @since 0.1
 decode :: OsString -> Either EncodingException String
-decode = OsString.decodeWith utf8Encoder utf16Encoder
+decode = OsStr.decodeWith utf8Encoder utf16Encoder
   where
     (utf8Encoder, utf16Encoder) = Internal.utfEncodings
 
@@ -157,7 +157,7 @@ decode = OsString.decodeWith utf8Encoder utf16Encoder
 --
 -- @since 0.1
 decodeLenient :: OsString -> String
-decodeLenient = elimEx . OsString.decodeWith uft8Encoding utf16Encoding
+decodeLenient = elimEx . OsStr.decodeWith uft8Encoding utf16Encoding
   where
     (uft8Encoding, utf16Encoding, elimEx) = Internal.utfEncodingsLenient
 

@@ -6,7 +6,7 @@ module Unit.FileSystem.OsPath (tests) where
 import Control.Monad (void)
 import Data.Either (isRight)
 import FileSystem.OsPath (OsPath, osp, ospPathSep)
-import FileSystem.OsPath qualified as FS.OsPath
+import FileSystem.OsPath qualified as FS.OsP
 import Hedgehog
   ( Gen,
     PropertyT,
@@ -19,7 +19,7 @@ import Hedgehog
 import Hedgehog qualified as H
 import Hedgehog.Gen qualified as Gen
 import Hedgehog.Range qualified as Range
-import System.OsPath qualified as OsPath
+import System.OsPath qualified as OsP
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (testCase, (@=?))
 import Test.Tasty.Hedgehog (testPropertyNamed)
@@ -49,7 +49,7 @@ testEncodeLenientTotal = testPropertyNamed desc "testEncodeLenientTotal" $ do
   H.property $ do
     fp <- forAll genSketchyFilePath
 
-    let encoded = FS.OsPath.encodeLenient fp
+    let encoded = FS.OsP.encodeLenient fp
 
     void $ evalNF encoded
   where
@@ -60,8 +60,8 @@ testEncodeLenientEqualsEncode = testPropertyNamed desc "testEncodeLenientEqualsE
   H.property $ do
     filePath <- forAll genFilePath
 
-    let eEncoded = FS.OsPath.encode filePath
-        encodedLenient = FS.OsPath.encodeLenient filePath
+    let eEncoded = FS.OsP.encode filePath
+        encodedLenient = FS.OsP.encodeLenient filePath
         encodeSuccess = isRight eEncoded
 
     annotateShow encodedLenient
@@ -75,7 +75,7 @@ testEncodeValidLenientTotal = testPropertyNamed desc "testEncodeValidLenientTota
   H.property $ do
     fp <- forAll genSketchyFilePath
 
-    let encoded = FS.OsPath.encodeValidLenient fp
+    let encoded = FS.OsP.encodeValidLenient fp
 
     void $ evalNF encoded
   where
@@ -86,8 +86,8 @@ testEncodeValidLenientEqualsEncode = testPropertyNamed desc "testEncodeValidLeni
   H.property $ do
     filePath <- forAll genFilePath
 
-    let eEncoded = FS.OsPath.encodeValid filePath
-        encodedLenient = FS.OsPath.encodeValidLenient filePath
+    let eEncoded = FS.OsP.encodeValid filePath
+        encodedLenient = FS.OsP.encodeValidLenient filePath
         encodeSuccess = isRight eEncoded
 
     annotateShow encodedLenient
@@ -101,7 +101,7 @@ testDecodeLenientTotal = testPropertyNamed desc "testDecodeLenientTotal" $ do
   H.property $ do
     osPath <- forAll genSketchyOsPath
 
-    let decoded = FS.OsPath.decodeLenient osPath
+    let decoded = FS.OsP.decodeLenient osPath
 
     void $ evalNF decoded
   where
@@ -112,8 +112,8 @@ testDecodeLenientEqualsDecode = testPropertyNamed desc "testDecodeLenientEqualsD
   H.property $ do
     osPath <- forAll genValidOsPath
 
-    let eDecoded = FS.OsPath.decode osPath
-        decodedLenient = FS.OsPath.decodeLenient osPath
+    let eDecoded = FS.OsP.decode osPath
+        decodedLenient = FS.OsP.decodeLenient osPath
         decodeSuccess = isRight eDecoded
 
     annotate decodedLenient
@@ -165,14 +165,14 @@ compareWithCoverage isSuccess eResult resultLenient = do
 genSketchyOsPath :: Gen OsPath
 genSketchyOsPath = do
   str <- genSketchyFilePath
-  let osCharList = OsPath.unsafeFromChar <$> str
-  pure $ OsPath.pack osCharList
+  let osCharList = OsP.unsafeFromChar <$> str
+  pure $ OsP.pack osCharList
 
 genSketchyFilePath :: Gen FilePath
 genSketchyFilePath = genSomeFilePath 0 Gen.unicodeAll
 
 genValidOsPath :: Gen OsPath
-genValidOsPath = FS.OsPath.unsafeEncodeValid <$> genFilePath
+genValidOsPath = FS.OsP.unsafeEncodeValid <$> genFilePath
 
 genFilePath :: Gen FilePath
 genFilePath = genSomeFilePath 1 g

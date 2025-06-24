@@ -75,7 +75,7 @@ import Language.Haskell.TH.Quote
   )
 import System.FilePath qualified as FP
 import System.OsPath (OsPath, osp, (-<.>), (<.>), (</>))
-import System.OsPath qualified as OsPath
+import System.OsPath qualified as OsP
 import System.OsPath.Encoding (EncodingException (EncodingError))
 
 -- NOTE: -Wno-redundant-constraints is because the HasCallStack is redundant
@@ -118,12 +118,12 @@ ospPathSep =
     }
 
 -- | Encodes a 'FilePath' to an 'OsPath'. This is a pure version of filepath's
--- 'OsPath.encodeUtf' that returns the 'EncodingException' in the event of an
+-- 'OsP.encodeUtf' that returns the 'EncodingException' in the event of an
 -- error.
 --
 -- @since 0.1
 encode :: FilePath -> Either EncodingException OsPath
-encode = OsPath.encodeWith utf8Encoder utf16Encoder
+encode = OsP.encodeWith utf8Encoder utf16Encoder
   where
     (utf8Encoder, utf16Encoder) = Internal.utfEncodings
 
@@ -132,11 +132,11 @@ encode = OsPath.encodeWith utf8Encoder utf16Encoder
 --
 -- @since 0.1
 encodeLenient :: FilePath -> OsPath
-encodeLenient = elimEx . OsPath.encodeWith uft8Encoding utf16Encoding
+encodeLenient = elimEx . OsP.encodeWith uft8Encoding utf16Encoding
   where
     (uft8Encoding, utf16Encoding, elimEx) = Internal.utfEncodingsLenient
 
--- | 'encode' that __also__ checks 'OsPath.isValid' i.e. 'encode'
+-- | 'encode' that __also__ checks 'OsP.isValid' i.e. 'encode'
 -- only succeeds if the 'FilePath' can be encoded /and/ passes expected
 -- invariants.
 --
@@ -145,7 +145,7 @@ encodeValid :: FilePath -> Either EncodingException OsPath
 encodeValid fp = case encode fp of
   Left ex -> Left ex
   Right op ->
-    if OsPath.isValid op
+    if OsP.isValid op
       then Right op
       else Left $ EncodingError (validFpErr fp op) Nothing
 
@@ -154,7 +154,7 @@ encodeValid fp = case encode fp of
 --
 -- @since 0.1
 encodeValidLenient :: FilePath -> OsPath
-encodeValidLenient = OsPath.makeValid . encodeLenient
+encodeValidLenient = OsP.makeValid . encodeLenient
 
 -- | 'encode' that throws 'EncodingException'.
 --
@@ -215,11 +215,11 @@ unsafeEncodeValid fp = case encodeValid fp of
   Right op -> op
 
 -- | Decodes an 'OsPath' to a 'FilePath'. This is a pure version of filepath's
--- 'OsPath.decodeUtf'.
+-- 'OsP.decodeUtf'.
 --
 -- @since 0.1
 decode :: OsPath -> Either EncodingException FilePath
-decode = OsPath.decodeWith utf8Encoder utf16Encoder
+decode = OsP.decodeWith utf8Encoder utf16Encoder
   where
     (utf8Encoder, utf16Encoder) = Internal.utfEncodings
 
@@ -228,7 +228,7 @@ decode = OsPath.decodeWith utf8Encoder utf16Encoder
 --
 -- @since 0.1
 decodeLenient :: OsPath -> FilePath
-decodeLenient = elimEx . OsPath.decodeWith uft8Encoding utf16Encoding
+decodeLenient = elimEx . OsP.decodeWith uft8Encoding utf16Encoding
   where
     (uft8Encoding, utf16Encoding, elimEx) = Internal.utfEncodingsLenient
 
