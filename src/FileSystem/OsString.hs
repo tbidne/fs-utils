@@ -130,7 +130,7 @@ encodeThrowM =
 encodeFail :: (HasCallStack, MonadFail m) => String -> m OsString
 encodeFail fp = case encode fp of
   Right txt -> pure txt
-  Left ex -> fail $ encodeFailure "encodeFail" fp (displayException ex)
+  Left ex -> fail (displayException ex)
 {-# INLINEABLE encodeFail #-}
 
 -- | Unsafely converts a 'String' to 'OsString' falling back to 'error'.
@@ -140,8 +140,7 @@ encodeFail fp = case encode fp of
 -- @since 0.1
 unsafeEncode :: (HasCallStack) => String -> OsString
 unsafeEncode fp = case encode fp of
-  Left ex ->
-    error $ encodeFailure "unsafeEncode" fp (displayException ex)
+  Left ex -> error (displayException ex)
   Right p -> p
 
 -- | Decodes an 'OsString' to a 'String'. This is a pure version of String's
@@ -178,8 +177,7 @@ decodeThrowM =
 decodeFail :: (HasCallStack, MonadFail m) => OsString -> m String
 decodeFail p = case decode p of
   Right txt -> pure txt
-  Left ex ->
-    fail $ decodeFailure "decodeFail" p (displayException ex)
+  Left ex -> fail (displayException ex)
 {-# INLINEABLE decodeFail #-}
 
 -- | Total conversion from 'OsString' to 'String'. If decoding fails, displays
@@ -188,7 +186,7 @@ decodeFail p = case decode p of
 -- @since 0.1
 decodeDisplayEx :: OsString -> String
 decodeDisplayEx p = case decode p of
-  Left ex -> decodeFailure "decodeDisplayEx" p (displayException ex)
+  Left ex -> (displayException ex)
   Right s -> s
 
 -- | Total conversion from 'OsString' to 'String'. If decoding fails, falls back
@@ -207,12 +205,5 @@ decodeShow p = case decode p of
 -- @since 0.1
 unsafeDecode :: (HasCallStack) => OsString -> String
 unsafeDecode p = case decode p of
-  Left ex -> error $ decodeFailure "unsafeDecode" p (displayException ex)
+  Left ex -> error (displayException ex)
   Right fp -> fp
-
-decodeFailure :: String -> OsString -> String -> String
-decodeFailure fnName p =
-  Internal.decodeFailure "OsString" "String" fnName (decodeLenient p)
-
-encodeFailure :: String -> String -> String -> String
-encodeFailure = Internal.encodeFailure "OsString" "String"

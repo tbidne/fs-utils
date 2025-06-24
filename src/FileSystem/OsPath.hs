@@ -147,7 +147,7 @@ encodeValid fp = case encode fp of
   Right op ->
     if OsPath.isValid op
       then Right op
-      else Left $ EncodingError (validErr "encodeValid" fp op) Nothing
+      else Left $ EncodingError (validFpErr fp op) Nothing
 
 -- | Total conversion from 'FilePath' to 'OsPath', replacing encode failures
 -- with the closest visual match. If the result is not valid, makes it valid.
@@ -170,9 +170,10 @@ encodeThrowM =
 --
 -- @since 0.1
 encodeValidThrowM :: (HasCallStack, MonadThrow m) => FilePath -> m OsPath
-encodeValidThrowM fp = case encodeValid fp of
-  Left ex -> throwM ex
-  Right op -> pure op
+encodeValidThrowM =
+  encodeValid >>> \case
+    Left ex -> throwM ex
+    Right op -> pure op
 {-# INLINEABLE encodeValidThrowM #-}
 
 -- | 'encodeThrowM' with 'MonadFail'.
@@ -181,7 +182,7 @@ encodeValidThrowM fp = case encodeValid fp of
 encodeFail :: (HasCallStack, MonadFail m) => FilePath -> m OsPath
 encodeFail fp = case encode fp of
   Right txt -> pure txt
-  Left ex -> fail $ encodeFailure "encodeFail" fp (displayException ex)
+  Left ex -> fail (displayException ex)
 {-# INLINEABLE encodeFail #-}
 
 -- | 'encodeValid' with 'MonadFail'.
@@ -189,7 +190,7 @@ encodeFail fp = case encode fp of
 -- @since 0.1
 encodeValidFail :: (HasCallStack, MonadFail m) => FilePath -> m OsPath
 encodeValidFail fp = case encodeValid fp of
-  Left ex -> fail $ encodeFailure "encodeValidFail" fp (displayException ex)
+  Left ex -> fail (displayException ex)
   Right op -> pure op
 {-# INLINEABLE encodeValidFail #-}
 
@@ -200,8 +201,7 @@ encodeValidFail fp = case encodeValid fp of
 -- @since 0.1
 unsafeEncode :: (HasCallStack) => FilePath -> OsPath
 unsafeEncode fp = case encode fp of
-  Left ex ->
-    error $ encodeFailure "unsafeEncode" fp (displayException ex)
+  Left ex -> error (displayException ex)
   Right p -> p
 
 -- | Unsafely converts a 'FilePath' to 'OsPath' falling back to 'error'.
@@ -211,8 +211,7 @@ unsafeEncode fp = case encode fp of
 -- @since 0.1
 unsafeEncodeValid :: (HasCallStack) => FilePath -> OsPath
 unsafeEncodeValid fp = case encodeValid fp of
-  Left ex ->
-    error $ encodeFailure "unsafeEncodeValid" fp (displayException ex)
+  Left ex -> error (displayException ex)
   Right op -> op
 
 -- | Decodes an 'OsPath' to a 'FilePath'. This is a pure version of filepath's
@@ -249,8 +248,7 @@ decodeThrowM =
 decodeFail :: (HasCallStack, MonadFail m) => OsPath -> m FilePath
 decodeFail p = case decode p of
   Right txt -> pure txt
-  Left ex ->
-    fail $ decodeFailure "decodeFail" p (displayException ex)
+  Left ex -> fail (displayException ex)
 {-# INLINEABLE decodeFail #-}
 
 -- | Total conversion from 'OsPath' to 'String'. If decoding fails, displays
@@ -259,7 +257,7 @@ decodeFail p = case decode p of
 -- @since 0.1
 decodeDisplayEx :: OsPath -> String
 decodeDisplayEx p = case decode p of
-  Left ex -> decodeFailure "decodeDisplayEx" p (displayException ex)
+  Left ex -> displayException ex
   Right s -> s
 
 -- | Total conversion from 'OsPath' to 'String'. If decoding fails, falls back
@@ -278,22 +276,13 @@ decodeShow p = case decode p of
 -- @since 0.1
 unsafeDecode :: (HasCallStack) => OsPath -> FilePath
 unsafeDecode p = case decode p of
-  Left ex -> error $ decodeFailure "unsafeDecode" p (displayException ex)
+  Left ex -> error (displayException ex)
   Right fp -> fp
 
-decodeFailure :: String -> OsPath -> String -> String
-decodeFailure fnName p =
-  Internal.decodeFailure "OsPath" "FilePath" fnName (decodeLenient p)
-
-encodeFailure :: String -> String -> String -> String
-encodeFailure = Internal.encodeFailure "OsPath" "FilePath"
-
-validErr :: String -> String -> OsPath -> String
-validErr fnName fp x =
+validFpErr :: String -> OsPath -> String
+validFpErr fp x =
   mconcat
-    [ "[FileSystem.OsPath.",
-      fnName,
-      "]: FilePath '",
+    [ "FilePath '",
       fp,
       "' encoded as OsPath '",
       decodeLenient x,

@@ -6,10 +6,6 @@ module FileSystem.Internal
     utfEncodings,
     utfEncodingsLenient,
 
-    -- * Error messages
-    encodeFailure,
-    decodeFailure,
-
     -- * Misc
     replaceSlashes,
   )
@@ -54,42 +50,6 @@ utfEncodingsLenient =
   )
   where
     elimEx = either (error . show) id
-
-decodeFailure :: String -> String -> String -> String -> String -> String
-decodeFailure tyName strName fnName p msg =
-  mconcat
-    [ "[FileSystem.",
-      tyName,
-      ".",
-      fnName,
-      "]: Could not decode ",
-      tyName,
-      " '",
-      p,
-      "' to ",
-      strName,
-      ": '",
-      msg,
-      "'"
-    ]
-
-encodeFailure :: String -> String -> String -> String -> String -> String
-encodeFailure tyName strName fnName fp msg =
-  mconcat
-    [ "[FileSystem.",
-      tyName,
-      ".",
-      fnName,
-      "]: Could not encode ",
-      strName,
-      " ",
-      fp,
-      "' to ",
-      tyName,
-      ": '",
-      msg,
-      "'"
-    ]
 
 {- ORMOLU_DISABLE -}
 
