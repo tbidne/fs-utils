@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 
 -- | Provides utilities for working with 'OsPath'.
@@ -64,13 +66,22 @@ module FileSystem.OsPath
 
     -- * Errors
     EncodingException (..),
+
+    -- * Tildes
+    toTildeState,
+    TildeState (..),
+    OsPathNE (..),
+    TildeException (..),
   )
 where
 
 import Control.Category ((>>>))
+import Control.DeepSeq (NFData)
 import Control.Exception (Exception (displayException))
 import Control.Monad.Catch (MonadThrow, throwM)
+import FileSystem.Internal (TildePrefixes)
 import FileSystem.Internal qualified as Internal
+import GHC.Generics (Generic)
 import GHC.Stack (HasCallStack)
 import Language.Haskell.TH.Quote
   ( QuasiQuoter
@@ -334,6 +345,129 @@ infixl 9 !</>
 -- @since 0.1
 combineFilePaths :: FilePath -> FilePath -> FilePath
 combineFilePaths = (FP.</>)
+
+-- | Exception for a path containing a tilde.
+newtype TildeException = MkTildeException OsPath
+  deriving stock
+    ( -- | @since 0.1
+      Eq,
+      -- | @since 0.1
+      Generic,
+      -- | @since 0.1
+      Show
+    )
+  deriving anyclass
+    ( -- | @since 0.1
+      NFData
+    )
+
+-- | @since 0.1
+instance Exception TildeException where
+  displayException (MkTildeException p) =
+    "Unexpected tilde in OsPath: " <> decodeLenient p
+
+-- | Represents the "tilde state" for a given path.
+data TildeState
+  = -- | The path contains no tildes.
+    TildeStateNone OsPath
+  | -- | The path contained a "tilde prefix" e.g. @~/@ or @~\\ (windows only)@,
+    -- which has been stripped. It contains no other tildes. The result can
+    -- be empty, however.
+    TildeStatePrefix OsPathNE
+  | -- | The path contained a non-prefix tilde.
+    TildeStateNonPrefix OsPath
+  deriving stock
+    ( -- | @since 0.1
+      Eq,
+      -- | @since 0.1
+      Generic,
+      -- | @since 0.1
+      Show
+    )
+  deriving anyclass
+    ( -- | @since 0.1
+      NFData
+    )
+
+-- | Retrieves the path's "tilde state".
+--
+-- @since 0.1
+toTildeState :: OsPath -> TildeState
+toTildeState p =
+  case stripTildePrefix p of
+    -- No leading tilde; check original string.
+    Nothing -> f TildeStateNone p
+    -- Leading tilde produced empty string; fine, nothing else to check.
+    Just OsPathEmpty -> TildeStatePrefix OsPathEmpty
+    -- Leading tilde w/ non-empty stripped; check stripped.
+    Just (OsPathNonEmpty p') ->
+      f (TildeStatePrefix . OsPathNonEmpty) p'
+  where
+    f :: (OsPath -> TildeState) -> OsPath -> TildeState
+    f toState q =
+      if Internal.containsTilde (toOsString q)
+        then TildeStateNonPrefix q
+        else toState q
+
+-- | Sum type representing a possible empty OsPath.
+--
+-- @since 0.1
+data OsPathNE
+  = -- | OsPath is empty.
+    --
+    -- @since 0.1
+    OsPathEmpty
+  | -- | OsPath is non-empty.
+    --
+    -- @since 0.1
+    OsPathNonEmpty OsPath
+  deriving stock
+    ( -- | @since 0.1
+      Eq,
+      -- | @since 0.1
+      Generic,
+      -- | @since 0.1
+      Show
+    )
+  deriving anyclass
+    ( -- | @since 0.1
+      NFData
+    )
+
+-- | Strip tilde prefix of path @p@, returning @Just p'@ if @p@ was stripped.
+-- On unix, strips @~/@. On windows, attempts to strip the same @~/@.
+-- If that was unsuccessful, then attempts @~\\@.
+--
+-- Note that this can return an empty OsPath if the parameter is one of
+-- @"~/"@, @"~"@, or @"~\\"@ (windows only).
+--
+-- @since 0.1
+stripTildePrefix :: OsPath -> Maybe OsPathNE
+stripTildePrefix =
+  fmap toStripped
+    . Internal.stripTildePrefix tildePrefixes
+    . toOsString
+  where
+    -- NOTE: This is predicated on the belief that stripping a prefix does not
+    -- change the validity. In particular, stripping a prefix cannot change a
+    -- valid path to an invalid path. There is one exception to this: A path
+    -- that _only_ contains the tilde prefix e.g. "~/". This will produce an
+    -- empty string which is _not_ valid.
+    --
+    -- We want to allow this, however, because downstream functions will want
+    -- to turn an empty path into the plain home directory. Hence we should
+    -- __not__ check validity here, which is okay as long as this is the only
+    -- instance of "introduced invalidity".
+    --
+    -- We should strongly signal that the result can be empty, hence OsPathNE.
+    toStripped :: OsString -> OsPathNE
+    toStripped s =
+      if s == mempty
+        then OsPathEmpty
+        else OsPathNonEmpty (reallyUnsafeFromOsString s)
+
+tildePrefixes :: TildePrefixes
+tildePrefixes = (toOsString [osp|~/|], toOsString [osp|~\|])
 
 -- | Convert an 'OsPath' to 'OsString'. This is currently the identity
 -- function.
