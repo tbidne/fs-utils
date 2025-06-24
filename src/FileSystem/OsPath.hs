@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 
 -- | Provides utilities for working with 'OsPath'.
@@ -83,8 +82,6 @@ import System.OsPath.Encoding (EncodingException (EncodingError))
 -- on some of these functions when the exceptions library is too old.
 -- Disabling the warning is easier than trying to get it right with cpp.
 
-{- ORMOLU_DISABLE -}
-
 -- | Like 'osp', except it runs paths through a "replace function" first.
 -- On unix, replaces @\\@ with @/@. On windows, does the opposite.
 --
@@ -114,23 +111,11 @@ import System.OsPath.Encoding (EncodingException (EncodingError))
 ospPathSep :: QuasiQuoter
 ospPathSep =
   QuasiQuoter
-    { quoteExp = osp.quoteExp . replaceSlashes,
-      quotePat = osp.quotePat . replaceSlashes,
-      quoteType = osp.quoteType . replaceSlashes,
-      quoteDec = osp.quoteDec . replaceSlashes
+    { quoteExp = osp.quoteExp . Internal.replaceSlashes,
+      quotePat = osp.quotePat . Internal.replaceSlashes,
+      quoteType = osp.quoteType . Internal.replaceSlashes,
+      quoteDec = osp.quoteDec . Internal.replaceSlashes
     }
-  where
-    replaceSlashes :: FilePath -> FilePath
-    replaceSlashes = foldr go ""
-      where
-#if WINDOWS
-        go '/' acc = '\\' : acc
-#else
-        go '\\' acc = '/' : acc
-#endif
-        go c acc = c : acc
-
-{- ORMOLU_ENABLE -}
 
 -- | Encodes a 'FilePath' to an 'OsPath'. This is a pure version of filepath's
 -- 'OsPath.encodeUtf' that returns the 'EncodingException' in the event of an

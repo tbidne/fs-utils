@@ -11,6 +11,7 @@ module FileSystem.OsString
 
     -- ** Total
     osstr,
+    osstrPathSep,
     encode,
     encodeLenient,
 
@@ -42,6 +43,15 @@ import Control.Exception (Exception (displayException))
 import Control.Monad.Catch (MonadThrow, throwM)
 import FileSystem.Internal qualified as Internal
 import GHC.Stack (HasCallStack)
+import Language.Haskell.TH.Quote
+  ( QuasiQuoter
+      ( QuasiQuoter,
+        quoteDec,
+        quoteExp,
+        quotePat,
+        quoteType
+      ),
+  )
 import System.OsString (OsString, osstr)
 import System.OsString qualified as OsString
 import System.OsString.Encoding (EncodingException (EncodingError))
@@ -49,6 +59,41 @@ import System.OsString.Encoding (EncodingException (EncodingError))
 -- NOTE: -Wno-redundant-constraints is because the HasCallStack is redundant
 -- on some of these functions when the exceptions library is too old.
 -- Disabling the warning is easier than trying to get it right with cpp.
+
+-- | Like 'osstr', except it runs paths through a "replace function" first.
+-- On unix, replaces @\\@ with @/@. On windows, does the opposite.
+--
+-- This is convenient for writing paths in a platform-agnostic way i.e. we
+-- are expecting a path
+--
+-- @
+--   "path\/to\/foo" -- unix
+--   "path\\to\\foo" -- windows
+-- @
+--
+-- The normal way to handle this would be to use the combine function '(</>)'
+-- i.e.
+--
+-- @
+--   [osstr|path|] '</>' [osstr|to|] '</>' [osstr|foo|]
+-- @
+--
+-- This can be quite cumbersome for long paths, so we provide this alternative,
+-- allowing:
+--
+-- @
+--   [osstrPathSep|path\/to\/foo]
+-- @
+--
+-- Which will automatically convert slashes.
+osstrPathSep :: QuasiQuoter
+osstrPathSep =
+  QuasiQuoter
+    { quoteExp = osstr.quoteExp . Internal.replaceSlashes,
+      quotePat = osstr.quotePat . Internal.replaceSlashes,
+      quoteType = osstr.quoteType . Internal.replaceSlashes,
+      quoteDec = osstr.quoteDec . Internal.replaceSlashes
+    }
 
 -- | Encodes a 'String' to an 'OsString'. This is a pure version of String's
 -- 'OsString.encodeUtf' that returns the 'EncodingException' in the event of an

@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 -- | @since 0.1
 module FileSystem.Internal
   ( -- * Encodings
@@ -7,6 +9,9 @@ module FileSystem.Internal
     -- * Error messages
     encodeFailure,
     decodeFailure,
+
+    -- * Misc
+    replaceSlashes,
   )
 where
 
@@ -85,3 +90,17 @@ encodeFailure tyName strName fnName fp msg =
       msg,
       "'"
     ]
+
+{- ORMOLU_DISABLE -}
+
+replaceSlashes :: FilePath -> FilePath
+replaceSlashes = foldr go ""
+  where
+#if WINDOWS
+  go '/' acc = '\\' : acc
+#else
+  go '\\' acc = '/' : acc
+#endif
+  go c acc = c : acc
+
+{- ORMOLU_ENABLE -}

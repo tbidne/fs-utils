@@ -1,10 +1,11 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE QuasiQuotes #-}
 
 module Unit.FileSystem.OsString (tests) where
 
 import Control.Monad (void)
 import Data.Either (isRight)
-import FileSystem.OsString (OsString)
+import FileSystem.OsString (OsString, osstrPathSep)
 import FileSystem.OsString qualified as FS.OsString
 import Hedgehog
   ( Gen,
@@ -18,15 +19,18 @@ import Hedgehog
 import Hedgehog qualified as H
 import Hedgehog.Gen qualified as Gen
 import Hedgehog.Range qualified as Range
+import System.OsString (osstr)
 import System.OsString qualified as OsString
 import Test.Tasty (TestTree, testGroup)
+import Test.Tasty.HUnit (testCase, (@=?))
 import Test.Tasty.Hedgehog (testPropertyNamed)
 
 tests :: TestTree
 tests =
   testGroup
     "OsString"
-    [ encodingTests
+    [ encodingTests,
+      osstrPathSepTests
     ]
 
 encodingTests :: TestTree
@@ -150,3 +154,34 @@ genString = genSomeString 1 g
 
 genSomeString :: Int -> Gen Char -> Gen String
 genSomeString start = Gen.string (Range.linearFrom start start 50)
+
+osstrPathSepTests :: TestTree
+osstrPathSepTests =
+  testGroup
+    "osstrPathSep"
+    [ testReplacesSlashes
+    ]
+
+testReplacesSlashes :: TestTree
+testReplacesSlashes = testCase "Slashes are replaced" $ do
+
+#if WINDOWS
+
+  [osstr|\path\to\foo|] @=? [osstrPathSep|/path/to/foo|]
+  [osstr|\path\to\foo\|] @=? [osstrPathSep|/path/to/foo/|]
+  [osstr|.\path\to\foo\|] @=? [osstrPathSep|./path/to/foo/|]
+  [osstr|.\|] @=? [osstrPathSep|./|]
+  [osstr|.|] @=? [osstrPathSep|.|]
+
+#else
+
+  [osstr|/path/to/foo|] @=? [osstrPathSep|\path\to\foo|]
+  [osstr|/path/to/foo/|] @=? [osstrPathSep|\path\to\foo\|]
+  [osstr|./path/to/foo|] @=? [osstrPathSep|.\path\to\foo|]
+  [osstr|./|] @=? [osstrPathSep|.\|]
+  [osstr|.|] @=? [osstrPathSep|.|]
+
+  -- no escaping in quasiquote
+  [osstr|//path//to//foo|] @=? [osstrPathSep|\\path\\to\\foo|]
+
+#endif
