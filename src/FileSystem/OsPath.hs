@@ -44,6 +44,14 @@ module FileSystem.OsPath
     decodeFail,
     unsafeDecode,
 
+    -- * OsString
+    toOsString,
+    fromOsString,
+    fromOsStringThrowM,
+    fromOsStringFail,
+    unsafeFromOsString,
+    reallyUnsafeFromOsString,
+
     -- * Functions
     (</>),
     (<.>),
@@ -77,6 +85,7 @@ import System.FilePath qualified as FP
 import System.OsPath (OsPath, osp, (-<.>), (<.>), (</>))
 import System.OsPath qualified as OsP
 import System.OsPath.Encoding (EncodingException (EncodingError))
+import System.OsString (OsString)
 
 -- NOTE: -Wno-redundant-constraints is because the HasCallStack is redundant
 -- on some of these functions when the exceptions library is too old.
@@ -289,6 +298,14 @@ validFpErr fp x =
       "' failed isValid"
     ]
 
+validOsStrErr :: OsString -> String
+validOsStrErr str =
+  mconcat
+    [ "OsString '",
+      decodeLenient str,
+      "' failed isValid"
+    ]
+
 -- | Unsafely combines an 'OsPath' and a 'FilePath' via (</>) with
 -- 'unsafeEncode'.
 --
@@ -317,3 +334,53 @@ infixl 9 !</>
 -- @since 0.1
 combineFilePaths :: FilePath -> FilePath -> FilePath
 combineFilePaths = (FP.</>)
+
+-- | Convert an 'OsPath' to 'OsString'. This is currently the identity
+-- function.
+--
+-- @since 0.1
+toOsString :: OsPath -> OsString
+toOsString = id
+
+-- | Convert an 'OsString' to 'OsPath'. Currently this merely checks
+-- 'OsPath.isValid'.
+--
+-- @since 0.1
+fromOsString :: OsString -> Either EncodingException OsPath
+fromOsString s =
+  if OsP.isValid s
+    then Right s
+    else Left (EncodingError (validOsStrErr s) Nothing)
+
+-- | 'fromOsString' that throws the 'EncodingException'.
+--
+-- @since 0.1
+fromOsStringThrowM :: (HasCallStack, MonadThrow m) => OsString -> m OsPath
+fromOsStringThrowM =
+  fromOsString >>> \case
+    Left ex -> throwM ex
+    Right p -> pure p
+
+-- | 'fromOsString' for 'MonadFail'.
+--
+-- @since 0.1
+fromOsStringFail :: (HasCallStack, MonadFail m) => OsString -> m OsPath
+fromOsStringFail s = case fromOsString s of
+  Left ex -> fail $ displayException ex
+  Right p -> pure p
+
+-- | Unsafely checks an 'OsString' for validity, dying with 'error' on
+-- failure.
+--
+-- @since 0.1
+unsafeFromOsString :: (HasCallStack) => OsString -> OsPath
+unsafeFromOsString s = case fromOsString s of
+  Left ex -> error $ displayException ex
+  Right p -> p
+
+-- | "Converts" from 'OsString' to 'OsPath' without checking any invariants.
+-- Used for when we know an operator cannot have
+--
+-- @since 0.1
+reallyUnsafeFromOsString :: OsString -> OsPath
+reallyUnsafeFromOsString = id
