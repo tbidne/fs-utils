@@ -9,7 +9,7 @@ module FileSystem.Internal
 
     -- * Tildes
     TildePrefixes,
-    stripTildePrefix,
+    stripTildePrefixes,
     containsTilde,
 
     -- * Misc
@@ -17,6 +17,7 @@ module FileSystem.Internal
   )
 where
 
+import Control.Applicative (Alternative ((<|>)))
 import GHC.IO.Encoding.Failure (CodingFailureMode (TransliterateCodingFailure))
 import GHC.IO.Encoding.UTF16 qualified as UTF16
 import GHC.IO.Encoding.UTF8 qualified as UTF8
@@ -68,16 +69,25 @@ type TildePrefixes = (OsString, OsString)
 -- If that was unsuccessful, then attempts @~\\@.
 --
 -- @since 0.1
-stripTildePrefix :: TildePrefixes -> OsString -> Maybe OsString
-stripTildePrefix (posixPrefix, _windowsPrefix) p =
-  if p == [osstr|~|]
-    then Just [osstr||]
-    else case OsStr.stripPrefix posixPrefix p of
-      Just p' -> Just p'
+stripTildePrefixes :: TildePrefixes -> OsString -> Maybe OsString
+stripTildePrefixes (posixPrefix, _windowsPrefix) = go
+  where
+    go :: OsString -> Maybe OsString
+    go p =
+      -- 1. A lone ~ is a prefix of an empty string.
+      if p == [osstr|~|]
+        then Just [osstr||]
+        -- 2. If the string contains a prefix (~/ or ~\) then strip it, and
+        -- recursively try again. Ths goal is to return a string that does
+        -- _not_ start with a tilde prefix. Any other tildes are fine.
+        else case OsStr.stripPrefix posixPrefix p of
+          Just p' -> go p' <|> Just p'
 #if WINDOWS
-      Nothing -> OsStr.stripPrefix _windowsPrefix p
+          Nothing -> case OsStr.stripPrefix _windowsPrefix p of
+            Just p' -> go p' <|> Just p'
+            Nothing -> Nothing
 #else
-      Nothing -> Nothing
+          Nothing -> Nothing
 #endif
 
 -- | Determines if the path contains a tilde character.

@@ -68,9 +68,9 @@ module FileSystem.OsPath
     EncodingException (..),
 
     -- * Tildes
-    toTildeState,
-    TildeState (..),
-    OsPathNE (..),
+    toTildePrefixState,
+    TildePrefixState (..),
+    OsPathOrEmpty (..),
     TildeException (..),
   )
 where
@@ -367,15 +367,12 @@ instance Exception TildeException where
     "Unexpected tilde in OsPath: " <> decodeLenient p
 
 -- | Represents the "tilde state" for a given path.
-data TildeState
-  = -- | The path contains no tildes.
-    TildeStateNone OsPath
-  | -- | The path contained a "tilde prefix" e.g. @~/@ or @~\\ (windows only)@,
-    -- which has been stripped. It contains no other tildes. The result can
-    -- be empty, however.
-    TildeStatePrefix OsPathNE
-  | -- | The path contained a non-prefix tilde.
-    TildeStateNonPrefix OsPath
+data TildePrefixState
+  = -- | The path contained no tilde prefix.
+    TildePrefixStateNone OsPath
+  | -- | The path contained "tilde prefix(es)" e.g. @~/@ or @~\\ (windows only)@,
+    -- which have been stripped. The result can be empty, however.
+    TildePrefixStateStripped OsPathOrEmpty
   deriving stock
     ( -- | @since 0.1
       Eq,
@@ -389,30 +386,27 @@ data TildeState
       NFData
     )
 
--- | Retrieves the path's "tilde state".
+-- | Retrieves the path's "tilde state". Strips consecutive "tilde prefixes"
+-- if they exist. If the string contains no prefixes, returns it unchanged.
 --
 -- @since 0.1
-toTildeState :: OsPath -> TildeState
-toTildeState p =
-  case stripTildePrefix p of
+toTildePrefixState :: OsPath -> TildePrefixState
+toTildePrefixState p =
+  case stripTildePrefixes p of
     -- No leading tilde; check original string.
-    Nothing -> f TildeStateNone p
+    Nothing -> TildePrefixStateNone p
     -- Leading tilde produced empty string; fine, nothing else to check.
-    Just OsPathEmpty -> TildeStatePrefix OsPathEmpty
+    Just OsPathEmpty -> TildePrefixStateStripped OsPathEmpty
     -- Leading tilde w/ non-empty stripped; check stripped.
-    Just (OsPathNonEmpty p') ->
-      f (TildeStatePrefix . OsPathNonEmpty) p'
-  where
-    f :: (OsPath -> TildeState) -> OsPath -> TildeState
-    f toState q =
-      if Internal.containsTilde (toOsString q)
-        then TildeStateNonPrefix q
-        else toState q
+    Just (OsPathNonEmpty p') -> (TildePrefixStateStripped . OsPathNonEmpty) p'
 
--- | Sum type representing a possible empty OsPath.
+-- | Sum type representing a possible empty OsPath. The 'OsPath' type _can_
+-- be empty, hence 'OsPathNonEmpty' should only be used when the 'OsPath'
+-- has been verified first. This type really exists to make it clear when
+-- the empty distinction matters.
 --
 -- @since 0.1
-data OsPathNE
+data OsPathOrEmpty
   = -- | OsPath is empty.
     --
     -- @since 0.1
@@ -442,10 +436,10 @@ data OsPathNE
 -- @"~/"@, @"~"@, or @"~\\"@ (windows only).
 --
 -- @since 0.1
-stripTildePrefix :: OsPath -> Maybe OsPathNE
-stripTildePrefix =
+stripTildePrefixes :: OsPath -> Maybe OsPathOrEmpty
+stripTildePrefixes =
   fmap toStripped
-    . Internal.stripTildePrefix tildePrefixes
+    . Internal.stripTildePrefixes tildePrefixes
     . toOsString
   where
     -- NOTE: This is predicated on the belief that stripping a prefix does not
@@ -459,8 +453,8 @@ stripTildePrefix =
     -- __not__ check validity here, which is okay as long as this is the only
     -- instance of "introduced invalidity".
     --
-    -- We should strongly signal that the result can be empty, hence OsPathNE.
-    toStripped :: OsString -> OsPathNE
+    -- We should strongly signal that the result can be empty, hence OsPathOrEmpty.
+    toStripped :: OsString -> OsPathOrEmpty
     toStripped s =
       if s == mempty
         then OsPathEmpty

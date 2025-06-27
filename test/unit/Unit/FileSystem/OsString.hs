@@ -7,10 +7,9 @@ import Control.Monad (void)
 import Data.Either (isRight)
 import FileSystem.OsString
   ( OsString,
-    TildeState
-      ( TildeStateNonPrefix,
-        TildeStateNone,
-        TildeStatePrefix
+    TildePrefixState
+      ( TildePrefixStateNone,
+        TildePrefixStateStripped
       ),
     osstr,
     osstrPathSep,
@@ -198,37 +197,45 @@ testReplacesSlashes = testCase "Slashes are replaced" $ do
 tildeTests :: TestTree
 tildeTests =
   testGroup
-    "toTildeState"
+    "toTildePrefixState"
     [ testTildeCases
     ]
 
 testTildeCases :: TestTree
 testTildeCases = testCase "Cases" $ do
   -- Both unix and windows consider '~/' a tilde prefix.
-  TildeStateNone [osstr|foo/bar|] @=? FS.OsStr.toTildeState [osstr|foo/bar|]
-  TildeStatePrefix [osstr||] @=? FS.OsStr.toTildeState [osstr|~/|]
-  TildeStatePrefix [osstr||] @=? FS.OsStr.toTildeState [osstr|~|]
-  TildeStatePrefix [osstr|foo/bar|] @=? FS.OsStr.toTildeState [osstr|~/foo/bar|]
-  TildeStateNonPrefix [osstr|foo/b~ar|] @=? FS.OsStr.toTildeState [osstr|foo/b~ar|]
-  TildeStateNonPrefix [osstr|foo/b~ar|] @=? FS.OsStr.toTildeState [osstr|~/foo/b~ar|]
+  TildePrefixStateNone [osstr|foo/bar|] @=? FS.OsStr.toTildePrefixState [osstr|foo/bar|]
+  TildePrefixStateStripped [osstr||] @=? FS.OsStr.toTildePrefixState [osstr|~/|]
+  TildePrefixStateStripped [osstr||] @=? FS.OsStr.toTildePrefixState [osstr|~|]
+  -- Multiple tildes is not a prefix
+  TildePrefixStateNone [osstr|~~~|] @=? FS.OsStr.toTildePrefixState [osstr|~~~|]
+  TildePrefixStateStripped [osstr|foo/bar|] @=? FS.OsStr.toTildePrefixState [osstr|~/foo/bar|]
+  TildePrefixStateNone [osstr|foo/b~ar|] @=? FS.OsStr.toTildePrefixState [osstr|foo/b~ar|]
+  TildePrefixStateStripped [osstr|foo/b~ar|] @=? FS.OsStr.toTildePrefixState [osstr|~/foo/b~ar|]
   -- Use osstrPathSep so that we test the "canonical" path separator i.e.
   -- '~\' on unix (redundant for unix, since should be same as above).
-  TildeStateNone [osstrPathSep|foo/bar|] @=? FS.OsStr.toTildeState [osstrPathSep|foo/bar|]
-  TildeStatePrefix [osstrPathSep|foo/bar|] @=? FS.OsStr.toTildeState [osstrPathSep|~/foo/bar|]
-  TildeStateNonPrefix [osstrPathSep|foo/b~ar|] @=? FS.OsStr.toTildeState [osstrPathSep|foo/b~ar|]
-  TildeStateNonPrefix [osstrPathSep|foo/b~ar|] @=? FS.OsStr.toTildeState [osstrPathSep|~/foo/b~ar|]
-  -- Both unix and windows should reject the internal '~\'.
-  TildeStateNonPrefix [osstr|foo/~\bar|] @=? FS.OsStr.toTildeState [osstr|~/foo/~\bar|]
+  TildePrefixStateNone [osstrPathSep|foo/bar|] @=? FS.OsStr.toTildePrefixState [osstrPathSep|foo/bar|]
+  TildePrefixStateStripped [osstrPathSep|foo/bar|] @=? FS.OsStr.toTildePrefixState [osstrPathSep|~/foo/bar|]
+  TildePrefixStateNone [osstrPathSep|foo/b~ar|] @=? FS.OsStr.toTildePrefixState [osstrPathSep|foo/b~ar|]
+  TildePrefixStateStripped [osstrPathSep|foo/b~ar|] @=? FS.OsStr.toTildePrefixState [osstrPathSep|~/foo/b~ar|]
+  -- Both unix and windows should handle this the same.
+  TildePrefixStateStripped [osstr|foo/~\bar|] @=? FS.OsStr.toTildePrefixState [osstr|~/foo/~\bar|]
+  -- Consecutive prefixes are stripped
+  TildePrefixStateStripped [osstr|foo~bar|] @=? FS.OsStr.toTildePrefixState [osstr|~/~/~/foo~bar|]
 #if WINDOWS
   -- Windows should recognize the tilde prefix '~\'.
-  TildeStatePrefix [osstr||] @=? FS.OsStr.toTildeState [osstr|~\|]
-  TildeStatePrefix [osstr|foo\bar|] @=? FS.OsStr.toTildeState [osstr|~\foo\bar|]
+  TildePrefixStateStripped [osstr||] @=? FS.OsStr.toTildePrefixState [osstr|~\|]
+  TildePrefixStateStripped [osstr|foo\bar|] @=? FS.OsStr.toTildePrefixState [osstr|~\foo\bar|]
   -- Windows should strip the first prefix then die on the second, since we
   -- only allow one prefix.
-  TildeStateNonPrefix [osstr|foo~/bar|] @=? FS.OsStr.toTildeState [osstr|~\foo~/bar|]
+  TildePrefixStateStripped [osstr|foo~/bar|] @=? FS.OsStr.toTildePrefixState [osstr|~\foo~/bar|]
+  -- Consecutive prefixes are stripped
+  TildePrefixStateStripped [osstr|foo~bar|] @=? FS.OsStr.toTildePrefixState [osstr|~/~\~/foo~bar|]
 #else
   -- Unix does not recognize '~\' as a tilde prefix.
-  TildeStateNonPrefix [osstr|~\foo\bar|] @=? FS.OsStr.toTildeState [osstr|~\foo\bar|]
+  TildePrefixStateNone [osstr|~\foo\bar|] @=? FS.OsStr.toTildePrefixState [osstr|~\foo\bar|]
   -- Unix should die on the first prefix, since it's windows only.
-  TildeStateNonPrefix [osstr|~\foo~/bar|] @=? FS.OsStr.toTildeState [osstr|~\foo~/bar|]
+  TildePrefixStateNone [osstr|~\foo~/bar|] @=? FS.OsStr.toTildePrefixState [osstr|~\foo~/bar|]
+  -- Stops after first posix prefix.
+  TildePrefixStateStripped [osstr|~\~/foo~bar|] @=? FS.OsStr.toTildePrefixState [osstr|~/~\~/foo~bar|]
 #endif
