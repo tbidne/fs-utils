@@ -42,6 +42,7 @@ module FileSystem.OsString
     toTildePrefixState,
     TildePrefixState (..),
     TildeException (..),
+    containsTildePrefix,
   )
 where
 
@@ -49,6 +50,7 @@ import Control.Category ((>>>))
 import Control.DeepSeq (NFData)
 import Control.Exception (Exception (displayException))
 import Control.Monad.Catch (MonadThrow, throwM)
+import Data.Maybe (isJust)
 import FileSystem.Internal (TildePrefixes)
 import FileSystem.Internal qualified as Internal
 import GHC.Generics (Generic)
@@ -269,6 +271,12 @@ toTildePrefixState p =
     Nothing -> TildePrefixStateNone p
     -- Leading tilde; check stripped.
     Just p' -> TildePrefixStateStripped p'
+
+-- | Returns true iff the string has a tilde prefix.
+--
+-- @since 0.1
+containsTildePrefix :: OsString -> Bool
+containsTildePrefix = isJust . stripTildePrefixes
 
 -- | Strip tilde prefix of path @p@, returning @Just p'@ if @p@ was stripped.
 -- On unix, strips @~/@. On windows, attempts to strip the same @~/@.

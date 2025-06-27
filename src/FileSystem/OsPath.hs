@@ -72,6 +72,7 @@ module FileSystem.OsPath
     TildePrefixState (..),
     OsPathOrEmpty (..),
     TildeException (..),
+    containsTildePrefix,
   )
 where
 
@@ -79,6 +80,7 @@ import Control.Category ((>>>))
 import Control.DeepSeq (NFData)
 import Control.Exception (Exception (displayException))
 import Control.Monad.Catch (MonadThrow, throwM)
+import Data.Maybe (isJust)
 import FileSystem.Internal (TildePrefixes)
 import FileSystem.Internal qualified as Internal
 import GHC.Generics (Generic)
@@ -427,6 +429,12 @@ data OsPathOrEmpty
     ( -- | @since 0.1
       NFData
     )
+
+-- | Returns true iff the string has a tilde prefix.
+--
+-- @since 0.1
+containsTildePrefix :: OsPath -> Bool
+containsTildePrefix = isJust . stripTildePrefixes
 
 -- | Strip tilde prefix of path @p@, returning @Just p'@ if @p@ was stripped.
 -- On unix, strips @~/@. On windows, attempts to strip the same @~/@.
