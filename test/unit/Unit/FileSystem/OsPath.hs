@@ -4,6 +4,8 @@
 module Unit.FileSystem.OsPath (tests) where
 
 import Control.Monad (void)
+import Data.ByteString.Short qualified as SBS
+import Data.Coerce (coerce)
 import Data.Either (isRight)
 import FileSystem.OsPath
   ( OsPath,
@@ -30,6 +32,17 @@ import Hedgehog qualified as H
 import Hedgehog.Gen qualified as Gen
 import Hedgehog.Range qualified as Range
 import System.OsPath qualified as OsP
+#if WINDOWS
+import System.OsString.Internal.Types
+  ( OsString (OsString),
+    WindowsString (WindowsString),
+  )
+#else
+import System.OsString.Internal.Types
+  ( OsString (OsString),
+    PosixString (PosixString),
+  )
+#endif
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (testCase, (@=?))
 import Test.Tasty.Hedgehog (testPropertyNamed)
@@ -40,7 +53,8 @@ tests =
     "OsPath"
     [ encodingTests,
       ospPathSepTests,
-      tildeTests
+      tildeTests,
+      normalizeTests
     ]
 
 encodingTests :: TestTree
@@ -291,3 +305,76 @@ testTildePreservesValid = testPropertyNamed desc name $ do
   where
     desc = "Preserves validity"
     name = "testTildePreservesValid"
+
+normalizeTests :: TestTree
+normalizeTests =
+  testGroup
+    "Normalize"
+    [ testNormalize
+    ]
+
+{- ORMOLU_DISABLE -}
+
+testNormalize :: TestTree
+testNormalize = testCase "Normalizes string" $ do
+  -- S is two code points, 'O' and "combining diacritical marks".
+  2 @=? length s
+  "\x4F\x308" @=? s
+
+  -- Decode these to [Word8] for inspection.
+
+  os@(OsString osi) <- FS.OsP.encodeThrowM s
+  let osBytes = coerce osi
+
+      -- Normalized OsString will combine the 'O' and diacrits into a single
+      -- code point.
+      os'@(OsString osi') = FS.OsP.normalize os
+      osBytes' = coerce osi'
+
+#if WINDOWS
+  -- Encoding to WindowsString (UTF-16 little-endian) is 2 bytes.
+  2 * windowsBugFactor @=? FS.OsP.length os
+
+  -- Normalized WindowsString is 1 byte.
+  1 * windowsBugFactor @=? FS.OsP.length os'
+
+  -- O, U+0308 (little-endian). Notice we have 4 elements instead of 2,
+  -- because 'unpack :: ShortByteString -> [Word8]'.
+  [79, 0, 8, 3] @=? SBS.unpack osBytes
+
+  -- U+D6.
+  [214, 0] @=? SBS.unpack osBytes'
+#else
+  -- Encoding to PosixString (UTF-8) is 3 bytes.
+  3 @=? FS.OsP.length os
+
+  -- O, U+CC, U+88
+  -- The latter two are the UTF-8 encoding of U+308.
+  [79, 204, 136] @=? SBS.unpack osBytes
+
+  -- Normalized PosixString is 2 bytes.
+  2 @=? FS.OsP.length os'
+
+  -- U+C3, U+96
+  -- These are the UTF-8 encoding of U+D6.
+  [195, 150] @=? SBS.unpack osBytes'
+#endif
+
+  -- Normalized length should be one, since the 'O' and diacrits should be
+  -- combined into a single glyph, per text normalization.
+  1 @=? FS.OsP.glyphLength os
+  where
+    -- s = "Ö"
+    s = ['\x4F', '\x308']
+
+-- see NOTE: [Windows os-string length bug]
+#if WINDOWS
+windowsBugFactor :: Int
+#if MIN_VERSION_os_string(2,0,3) || !MIN_VERSION_os_string(2,0,2)
+windowsBugFactor = 1
+#else
+windowsBugFactor = 2
+#endif
+#endif
+
+{- ORMOLU_ENABLE -}
