@@ -43,6 +43,13 @@ module FileSystem.OsString
     TildePrefixState (..),
     TildeException (..),
     containsTildePrefix,
+
+    -- * Functions
+    OsStr.length,
+
+    -- * Normalization
+    normalize,
+    glyphLength,
   )
 where
 
@@ -51,8 +58,10 @@ import Control.DeepSeq (NFData)
 import Control.Exception (Exception (displayException))
 import Control.Monad.Catch (MonadThrow, throwM)
 import Data.Maybe (isJust)
+import Data.Text qualified as T
 import FileSystem.Internal (TildePrefixes)
 import FileSystem.Internal qualified as Internal
+import FileSystem.UTF8 qualified as UTF8
 import GHC.Generics (Generic)
 import GHC.Stack (HasCallStack)
 import Language.Haskell.TH.Quote
@@ -291,3 +300,26 @@ stripTildePrefixes = Internal.stripTildePrefixes tildePrefixes
 
 tildePrefixes :: TildePrefixes
 tildePrefixes = ([osstr|~/|], [osstr|~\|])
+
+-- | Returns the number of "visual characters" i.e. glyphs. This is done by
+-- performing unicode normalization then taking the 'Text' length.
+-- Note that this is /not/ the same as 'OsStr.length'.
+--
+-- @since 0.1
+glyphLength :: OsString -> Int
+glyphLength =
+  UTF8.glyphLength
+    . T.pack
+    . decodeLenient
+
+-- | Performs canonical unicode decomposition/composition. Converts to/from
+-- 'Text' via lenient encodings.
+--
+-- @since 0.1
+normalize :: OsString -> OsString
+normalize =
+  encodeLenient
+    . T.unpack
+    . UTF8.normalizeC
+    . T.pack
+    . decodeLenient

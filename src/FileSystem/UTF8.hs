@@ -17,6 +17,12 @@ module FileSystem.UTF8
 
     -- * Encoding UTF-8
     TEnc.encodeUtf8,
+
+    -- * Normalization
+    normalizeC,
+    NormalizationMode (..),
+    TNormalize.normalize,
+    glyphLength,
   )
 where
 
@@ -25,9 +31,12 @@ import Control.Exception (Exception (displayException))
 import Control.Monad.Catch (MonadThrow, throwM)
 import Data.ByteString (ByteString)
 import Data.Text (Text)
+import Data.Text qualified as T
 import Data.Text.Encoding qualified as TEnc
 import Data.Text.Encoding.Error (UnicodeException)
 import Data.Text.Encoding.Error qualified as TEncError
+import Data.Text.Normalize (NormalizationMode (NFC, NFD, NFKC, NFKD))
+import Data.Text.Normalize qualified as TNormalize
 import GHC.Stack (HasCallStack)
 
 -- NOTE: -Wno-redundant-constraints is because the HasCallStack is redundant
@@ -85,3 +94,16 @@ unsafeDecodeUtf8 =
   decodeUtf8 >>> \case
     Right txt -> txt
     Left ex -> error $ displayException ex
+
+-- | Returns the number of "visual characters" i.e. glyphs.
+--
+-- @since 0.1
+glyphLength :: Text -> Int
+glyphLength = T.length . normalizeC
+
+-- | Normalizes text with canonical decomposition then canonical
+-- composition.
+--
+-- @since 0.1
+normalizeC :: Text -> Text
+normalizeC = TNormalize.normalize NFC

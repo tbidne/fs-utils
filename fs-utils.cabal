@@ -56,16 +56,17 @@ library
 
   other-modules:   FileSystem.Internal
   build-depends:
-    , base              >=4.16.0.0  && <4.22
-    , bytestring        >=0.10.12.0 && <0.13
-    , deepseq           >=1.4.4.0   && <1.6
-    , exceptions        ^>=0.10.4
-    , file-io           ^>=0.1.0.0
-    , filepath          >=1.5       && <1.6
-    , os-string         ^>=2.0.1
-    , path              ^>=0.9.6
-    , template-haskell  >=2.18.0.0  && <2.24
-    , text              >=1.2.4.0   && <2.2
+    , base                >=4.16.0.0  && <4.22
+    , bytestring          >=0.10.12.0 && <0.13
+    , deepseq             >=1.4.4.0   && <1.6
+    , exceptions          ^>=0.10.4
+    , file-io             ^>=0.1.0.0
+    , filepath            >=1.5       && <1.6
+    , os-string           ^>=2.0.1
+    , path                ^>=0.9.6
+    , template-haskell    >=2.18.0.0  && <2.24
+    , text                >=1.2.4.0   && <2.2
+    , unicode-transforms  ^>=0.4.0
 
   hs-source-dirs:  src
 
@@ -77,6 +78,7 @@ test-suite unit
     Unit.FileSystem.IO
     Unit.FileSystem.OsPath
     Unit.FileSystem.OsString
+    Unit.FileSystem.UTF8
 
   build-depends:
     , base
@@ -91,6 +93,7 @@ test-suite unit
     , tasty                 >=1.1.0.3   && <1.6
     , tasty-hedgehog        >=1.2.0.0   && <1.5
     , tasty-hunit           >=0.9       && <0.11
+    , text
     , unordered-containers  ^>=0.2.14.0
 
   hs-source-dirs: test/unit
