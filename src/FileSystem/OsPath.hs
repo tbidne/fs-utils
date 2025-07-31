@@ -1,6 +1,5 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE QuasiQuotes #-}
-{-# OPTIONS_GHC -Wno-missing-import-lists #-}
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 
 -- | Provides utilities for working with 'OsPath'.
@@ -74,13 +73,6 @@ module FileSystem.OsPath
     OsPathOrEmpty (..),
     TildeException (..),
     containsTildePrefix,
-
-    -- * Functions
-    length,
-
-    -- * Normalization
-    normalize,
-    glyphLength,
   )
 where
 
@@ -89,11 +81,8 @@ import Control.DeepSeq (NFData)
 import Control.Exception (Exception (displayException))
 import Control.Monad.Catch (MonadThrow, throwM)
 import Data.Maybe (isJust)
-import Data.Text qualified as T
 import FileSystem.Internal (TildePrefixes)
 import FileSystem.Internal qualified as Internal
-import FileSystem.OsString qualified as FS.OsStr
-import FileSystem.UTF8 qualified as UTF8
 import GHC.Generics (Generic)
 import GHC.Stack (HasCallStack)
 import Language.Haskell.TH.Quote
@@ -110,7 +99,6 @@ import System.OsPath (OsPath, osp, (-<.>), (<.>), (</>))
 import System.OsPath qualified as OsP
 import System.OsPath.Encoding (EncodingException (EncodingError))
 import System.OsString (OsString)
-import Prelude hiding (length)
 
 -- NOTE: -Wno-redundant-constraints is because the HasCallStack is redundant
 -- on some of these functions when the exceptions library is too old.
@@ -532,33 +520,3 @@ unsafeFromOsString s = case fromOsString s of
 -- @since 0.1
 reallyUnsafeFromOsString :: OsString -> OsPath
 reallyUnsafeFromOsString = id
-
--- | The length of an 'OsPath'. Counts word8 (posix) or word16 (windows)
--- boundaries.
---
--- @since 0.1
-length :: OsPath -> Int
-length = FS.OsStr.length . toOsString
-
--- | Returns the number of "visual characters" i.e. glyphs. This is done by
--- performing unicode normalization then taking the 'Text' length.
--- Note that this is /not/ the same as 'length'.
---
--- @since 0.1
-glyphLength :: OsPath -> Int
-glyphLength =
-  UTF8.glyphLength
-    . T.pack
-    . decodeLenient
-
--- | Performs canonical unicode decomposition/composition. Converts to/from
--- 'Text' via lenient encodings.
---
--- @since 0.1
-normalize :: OsPath -> OsPath
-normalize =
-  encodeLenient
-    . T.unpack
-    . UTF8.normalizeC
-    . T.pack
-    . decodeLenient

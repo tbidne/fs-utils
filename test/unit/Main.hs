@@ -11,7 +11,6 @@ import Test.Tasty (defaultMain, testGroup, withResource)
 import Unit.FileSystem.IO qualified
 import Unit.FileSystem.OsPath qualified
 import Unit.FileSystem.OsString qualified
-import Unit.FileSystem.UTF8 qualified
 
 main :: IO ()
 main =
@@ -21,8 +20,7 @@ main =
         "Unit Tests"
         [ Unit.FileSystem.IO.tests args,
           Unit.FileSystem.OsPath.tests,
-          Unit.FileSystem.OsString.tests,
-          Unit.FileSystem.UTF8.tests
+          Unit.FileSystem.OsString.tests
         ]
 
 setup :: IO OsPath
