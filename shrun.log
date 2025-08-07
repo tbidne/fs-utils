@@ -1,0 +1,62 @@
+[2025-08-08 11:54:50][Command][haddock_push] Starting...
+[2025-08-08 11:54:50][Command][haddock_push] Your branch is up to date with 'origin/main'.
+[2025-08-08 11:54:50][Command][haddock_push] Already on 'main'
+[2025-08-08 11:54:50][Command][haddock_push] Deleted branch gh-pages (was be90f63).
+[2025-08-08 11:54:50][Command][haddock_push] Switched to a new branch 'gh-pages'
+[2025-08-08 11:54:51][Command][haddock_push] Build profile: -w ghc-9.10.1 -O1
+[2025-08-08 11:54:51][Command][haddock_push] In order, the following will be built (use -v for more details):
+[2025-08-08 11:54:51][Command][haddock_push]  - fs-utils-0.1 (lib) (first run)
+[2025-08-08 11:54:51][Command][haddock_push] Configuring library for fs-utils-0.1...
+[2025-08-08 11:54:52][Command][haddock_push] Preprocessing library for fs-utils-0.1...
+[2025-08-08 11:54:52][Command][haddock_push] Running Haddock on library for fs-utils-0.1...
+[2025-08-08 11:54:52][Command][haddock_push] Warning: The documentation for the following packages are not installed. No
+[2025-08-08 11:54:52][Command][haddock_push] links will be generated to these packages: path-0.9.6, path-0.9.6
+[2025-08-08 11:54:52][Command][haddock_push] [1 of 7] Compiling FileSystem.Internal ( src/FileSystem/Internal.hs, /tmp/nix-shell.ideKv0/ghc827357_0/ghc_4.o, /tmp/nix-shell.ideKv0/ghc827357_0/ghc_4.dyn_o )
+[2025-08-08 11:54:53][Command][haddock_push] [2 of 7] Compiling FileSystem.OsPath ( src/FileSystem/OsPath.hs, nothing )
+[2025-08-08 11:54:53][Command][haddock_push] [3 of 7] Compiling FileSystem.IO    ( src/FileSystem/IO.hs, nothing )
+[2025-08-08 11:54:53][Command][haddock_push] [4 of 7] Compiling FileSystem.OsString ( src/FileSystem/OsString.hs, nothing )
+[2025-08-08 11:54:53][Command][haddock_push] [5 of 7] Compiling FileSystem.Path  ( src/FileSystem/Path.hs, nothing )
+[2025-08-08 11:54:53][Command][haddock_push] [6 of 7] Compiling FileSystem.PathType ( src/FileSystem/PathType.hs, nothing )
+[2025-08-08 11:54:53][Command][haddock_push] [7 of 7] Compiling FileSystem.UTF8  ( src/FileSystem/UTF8.hs, nothing )
+[2025-08-08 11:55:03][Command][haddock_push] Haddock coverage:
+[2025-08-08 11:55:03][Command][haddock_push]   98% ( 53 / 54) in 'FileSystem.OsPath'
+[2025-08-08 11:55:03][Command][haddock_push]   Missing documentation for:
+[2025-08-08 11:55:03][Command][haddock_push]     EncodingException
+[2025-08-08 11:55:03][Command][haddock_push]  100% ( 10 / 10) in 'FileSystem.IO'
+[2025-08-08 11:55:03][Command][haddock_push] Warning: '(</>)' is out of scope.
+[2025-08-08 11:55:03][Command][haddock_push]     If you qualify the identifier, haddock can try to link it anyway.
+[2025-08-08 11:55:03][Command][haddock_push] Warning: '</>' is out of scope.
+[2025-08-08 11:55:03][Command][haddock_push]     If you qualify the identifier, haddock can try to link it anyway.
+[2025-08-08 11:55:03][Command][haddock_push]   96% ( 29 / 30) in 'FileSystem.OsString'
+[2025-08-08 11:55:03][Command][haddock_push]   Missing documentation for:
+[2025-08-08 11:55:03][Command][haddock_push]     EncodingException
+[2025-08-08 11:55:03][Command][haddock_push] Warning: 'OsPath'' is out of scope.
+[2025-08-08 11:55:03][Command][haddock_push]     If you qualify the identifier, haddock can try to link it anyway.
+[2025-08-08 11:55:03][Command][haddock_push] Warning: FileSystem.Path: Couldn't find .haddock for export Path
+[2025-08-08 11:55:03][Command][haddock_push] Warning: FileSystem.Path: Couldn't find .haddock for export Abs
+[2025-08-08 11:55:03][Command][haddock_push] Warning: FileSystem.Path: Couldn't find .haddock for export Rel
+[2025-08-08 11:55:03][Command][haddock_push] Warning: FileSystem.Path: Couldn't find .haddock for export Dir
+[2025-08-08 11:55:03][Command][haddock_push] Warning: FileSystem.Path: Couldn't find .haddock for export File
+[2025-08-08 11:55:03][Command][haddock_push]   81% ( 22 / 27) in 'FileSystem.Path'
+[2025-08-08 11:55:03][Command][haddock_push]   Missing documentation for:
+[2025-08-08 11:55:03][Command][haddock_push]     Path
+[2025-08-08 11:55:03][Command][haddock_push]     Abs
+[2025-08-08 11:55:03][Command][haddock_push]     Rel
+[2025-08-08 11:55:03][Command][haddock_push]     Dir
+[2025-08-08 11:55:03][Command][haddock_push]     File
+[2025-08-08 11:55:03][Command][haddock_push]  100% (  3 /  3) in 'FileSystem.PathType'
+[2025-08-08 11:55:03][Command][haddock_push]  100% ( 11 / 11) in 'FileSystem.UTF8'
+[2025-08-08 11:55:03][Command][haddock_push] Warning: FileSystem.OsPath: could not find link destinations for: 
+[2025-08-08 11:55:03][Command][haddock_push] - FileSystem.OsPath.Rep_TildePrefixState
+[2025-08-08 11:55:03][Command][haddock_push] - FileSystem.OsPath.Rep_OsPathOrEmpty
+[2025-08-08 11:55:03][Command][haddock_push] - FileSystem.OsPath.Rep_TildeException
+[2025-08-08 11:55:03][Command][haddock_push] Warning: FileSystem.OsString: could not find link destinations for: 
+[2025-08-08 11:55:03][Command][haddock_push] - System.OsString.Internal.Types.Rep_OsString
+[2025-08-08 11:55:03][Command][haddock_push] - FileSystem.OsString.Rep_TildePrefixState
+[2025-08-08 11:55:03][Command][haddock_push] - FileSystem.OsString.Rep_TildeException
+[2025-08-08 11:55:03][Command][haddock_push] Warning: FileSystem.Path: could not find link destinations for: 
+[2025-08-08 11:55:03][Command][haddock_push] - OsPath.Internal.Posix.Rep_Path
+[2025-08-08 11:55:03][Command][haddock_push] Warning: FileSystem.PathType: could not find link destinations for: 
+[2025-08-08 11:55:03][Command][haddock_push] - FileSystem.PathType.Rep_PathType
+[2025-08-08 11:55:04][Command][haddock_push] Documentation created:
+[2025-08-08 11:55:04][Command][haddock_push] /home/tommy/Dev/tommy/github/fs-utils/dist-newstyle/build/x86_64-linux/ghc-9.10.1/fs-utils-0.1/doc/html/fs-utils/
