@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 
@@ -42,6 +41,7 @@ where
 
 import Control.Monad.Catch (MonadThrow)
 import Data.Bifunctor (Bifunctor (second))
+import FileSystem.Internal qualified as Internal
 import GHC.Stack (HasCallStack)
 import Language.Haskell.TH.Quote
   ( QuasiQuoter
@@ -72,10 +72,10 @@ pattern MkPath p <- (toOsPath -> p)
 absdirPathSep :: QuasiQuoter
 absdirPathSep =
   QuasiQuoter
-    { quoteExp = Path.absdir.quoteExp . replaceSlashes,
-      quotePat = Path.absdir.quotePat . replaceSlashes,
-      quoteType = Path.absdir.quoteType . replaceSlashes,
-      quoteDec = Path.absdir.quoteDec . replaceSlashes
+    { quoteExp = Path.absdir.quoteExp . Internal.replaceSlashes,
+      quotePat = Path.absdir.quotePat . Internal.replaceSlashes,
+      quoteType = Path.absdir.quoteType . Internal.replaceSlashes,
+      quoteDec = Path.absdir.quoteDec . Internal.replaceSlashes
     }
 
 -- | Like 'Path.absfile', except it runs paths through a "replace function"
@@ -85,10 +85,10 @@ absdirPathSep =
 absfilePathSep :: QuasiQuoter
 absfilePathSep =
   QuasiQuoter
-    { quoteExp = Path.absfile.quoteExp . replaceSlashes,
-      quotePat = Path.absfile.quotePat . replaceSlashes,
-      quoteType = Path.absfile.quoteType . replaceSlashes,
-      quoteDec = Path.absfile.quoteDec . replaceSlashes
+    { quoteExp = Path.absfile.quoteExp . Internal.replaceSlashes,
+      quotePat = Path.absfile.quotePat . Internal.replaceSlashes,
+      quoteType = Path.absfile.quoteType . Internal.replaceSlashes,
+      quoteDec = Path.absfile.quoteDec . Internal.replaceSlashes
     }
 
 -- | Like 'Path.reldir', except it runs paths through a "replace function"
@@ -98,10 +98,10 @@ absfilePathSep =
 reldirPathSep :: QuasiQuoter
 reldirPathSep =
   QuasiQuoter
-    { quoteExp = Path.reldir.quoteExp . replaceSlashes,
-      quotePat = Path.reldir.quotePat . replaceSlashes,
-      quoteType = Path.reldir.quoteType . replaceSlashes,
-      quoteDec = Path.reldir.quoteDec . replaceSlashes
+    { quoteExp = Path.reldir.quoteExp . Internal.replaceSlashes,
+      quotePat = Path.reldir.quotePat . Internal.replaceSlashes,
+      quoteType = Path.reldir.quoteType . Internal.replaceSlashes,
+      quoteDec = Path.reldir.quoteDec . Internal.replaceSlashes
     }
 
 -- | Like 'Path.relfile', except it runs paths through a "replace function"
@@ -111,25 +111,11 @@ reldirPathSep =
 relfilePathSep :: QuasiQuoter
 relfilePathSep =
   QuasiQuoter
-    { quoteExp = Path.relfile.quoteExp . replaceSlashes,
-      quotePat = Path.relfile.quotePat . replaceSlashes,
-      quoteType = Path.relfile.quoteType . replaceSlashes,
-      quoteDec = Path.relfile.quoteDec . replaceSlashes
+    { quoteExp = Path.relfile.quoteExp . Internal.replaceSlashes,
+      quotePat = Path.relfile.quotePat . Internal.replaceSlashes,
+      quoteType = Path.relfile.quoteType . Internal.replaceSlashes,
+      quoteDec = Path.relfile.quoteDec . Internal.replaceSlashes
     }
-
-{- ORMOLU_DISABLE -}
-
-replaceSlashes :: FilePath -> FilePath
-replaceSlashes = foldr go ""
-  where
-#if WINDOWS
-    go '/' acc = '\\' : acc
-#else
-    go '\\' acc = '/' : acc
-#endif
-    go c acc = c : acc
-
-{- ORMOLU_ENABLE -}
 
 -- | 'Path' to 'OsPath'.
 --
