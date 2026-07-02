@@ -197,7 +197,7 @@ decodeFail p = case decode p of
 -- @since 0.1
 decodeDisplayEx :: OsString -> String
 decodeDisplayEx p = case decode p of
-  Left ex -> (displayException ex)
+  Left ex -> displayException ex
   Right s -> s
 
 -- | Total conversion from 'OsString' to 'String'. If decoding fails, falls back
