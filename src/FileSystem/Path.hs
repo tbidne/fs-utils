@@ -9,6 +9,14 @@ module FileSystem.Path
     pattern MkPath,
 
     -- * QuasiQuoters
+
+    -- ** Normal
+    Path.absdir,
+    Path.absfile,
+    Path.reldir,
+    Path.relfile,
+
+    -- ** Path separators
     absdirPathSep,
     absfilePathSep,
     reldirPathSep,
